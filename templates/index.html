@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uber Data Analysis</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Rubik', sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding-top: 20px;
+            scroll-behavior: smooth;
+        }
+
+        h1, h3 {
+            text-align: center;
+            color: #343a40;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding-bottom: 50px;
+        }
+
+        img {
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 40px;
+        }
+
+        img:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.7s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            display: none;
+            z-index: 999;
+            cursor: pointer;
+        }
+
+        .back-to-top:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1 class="fade-in">Uber Data Analysis</h1>
+
+        <h3 class="fade-in">Trips Per Hour</h3>
+        <img src="{{ url_for('static', filename='hourly_trips.png') }}" class="img-fluid fade-in" alt="Trips Per Hour">
+
+        <h3 class="fade-in">Trips Per Day</h3>
+        <img src="{{ url_for('static', filename='daily_trips.png') }}" class="img-fluid fade-in" alt="Trips Per Day">
+
+        <h3 class="fade-in">Trips Per Weekday</h3>
+        <img src="{{ url_for('static', filename='weekday_trips.png') }}" class="img-fluid fade-in" alt="Trips Per Weekday">
+
+        <h3 class="fade-in">Trips Per Month</h3>
+        <img src="{{ url_for('static', filename='monthly_trips.png') }}" class="img-fluid fade-in" alt="Trips Per Month">
+
+        <h3 class="fade-in">Hourly Trip Heatmap</h3>
+        <img src="{{ url_for('static', filename='hourly_heatmap.png') }}" class="img-fluid fade-in" alt="Hourly Heatmap">
+
+        <h3 class="fade-in">Trip Purpose Distribution</h3>
+        <img src="{{ url_for('static', filename='trip_purpose_distribution.png') }}" class="img-fluid fade-in" alt="Trip Purpose Distribution">
+
+        <h3 class="fade-in">Trip Duration Distribution</h3>
+        <img src="{{ url_for('static', filename='trip_durations.png') }}" class="img-fluid fade-in" alt="Trip Duration Distribution">
+
+        <h3 class="fade-in">Trip Duration Boxplot</h3>
+        <img src="{{ url_for('static', filename='trip_duration_boxplot.png') }}" class="img-fluid fade-in" alt="Trip Duration Boxplot">
+
+        <h3 class="fade-in">Trip Duration vs Hour</h3>
+        <img src="{{ url_for('static', filename='trip_duration_vs_hour.png') }}" class="img-fluid fade-in" alt="Trip Duration vs Hour">
+    </div>
+
+    <!-- Back to Top Button -->
+    <button onclick="scrollToTop()" id="backToTop" class="back-to-top" title="Go to top">↑</button>
+
+    <!-- JS Scripts -->
+    <script>
+        // Fade in elements one after another
+        document.addEventListener("DOMContentLoaded", () => {
+            const items = document.querySelectorAll(".fade-in");
+            items.forEach((el, i) => {
+                el.style.animationDelay = `${i * 0.2}s`;
+            });
+        });
+
+        // Show/hide back to top button
+        const backToTop = document.getElementById("backToTop");
+        window.onscroll = () => {
+            backToTop.style.display = window.scrollY > 300 ? "block" : "none";
+        };
+
+        // Scroll to top smoothly
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+
+</body>
+</html>

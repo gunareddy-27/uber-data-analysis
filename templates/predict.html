@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+  <div class="md:grid md:grid-cols-2 md:gap-6">
+
+    <!-- Trip Duration Prediction -->
+    <div class="mt-5 md:mt-0 md:col-span-1">
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-indigo-50">
+          <h3 class="text-lg leading-6 font-medium text-indigo-900">
+            <i class="fas fa-route mr-2"></i>Trip Duration Prediction
+          </h3>
+          <p class="mt-1 max-w-2xl text-sm text-indigo-500">
+            Estimate how long a trip will take based on location and time.
+          </p>
+        </div>
+        <div class="px-4 py-5 sm:p-6">
+          <form action="{{ url_for('predict') }}" method="POST" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4">
+              <div>
+                <label for="miles" class="block text-sm font-medium text-gray-700">Estimated Distance (Miles)</label>
+                <input type="number" step="any" name="miles" id="miles" required placeholder="Ex: 5.5"
+                  class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md h-10 px-3">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="hour" class="block text-sm font-medium text-gray-700">Hour (0-23)</label>
+                <input type="number" min="0" max="23" name="hour" id="hour" required
+                  class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md h-10 px-3">
+              </div>
+              <div>
+                <label for="weekday" class="block text-sm font-medium text-gray-700">Weekday (0-6)</label>
+                <select name="weekday" id="weekday"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm h-10">
+                  <option value="0">Monday</option>
+                  <option value="1">Tuesday</option>
+                  <option value="2">Wednesday</option>
+                  <option value="3">Thursday</option>
+                  <option value="4">Friday</option>
+                  <option value="5">Saturday</option>
+                  <option value="6">Sunday</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit"
+              class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+              Predict Duration
+            </button>
+          </form>
+
+          {% if predicted_duration is not none %}
+          <div class="mt-6 rounded-md bg-green-50 p-4 border border-green-200 animate-pulse">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <i class="fas fa-check-circle text-green-400"></i>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-green-800">Prediction Result</h3>
+                <div class="mt-2 text-sm text-green-700">
+                  <p class="text-lg font-bold">Estimated Time: {{ predicted_duration }} minutes</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Demand Forecasting -->
+    <div class="mt-5 md:mt-0 md:col-span-1">
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-purple-50">
+          <h3 class="text-lg leading-6 font-medium text-purple-900">
+            <i class="fas fa-chart-bar mr-2"></i>Demand Forecasting
+          </h3>
+          <p class="mt-1 max-w-2xl text-sm text-purple-500">
+            Forecast future ride demand volume (Future Prediction).
+          </p>
+        </div>
+        <div class="px-4 py-5 sm:p-6">
+          <form action="{{ url_for('predict') }}" method="POST" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="demand_hour" class="block text-sm font-medium text-gray-700">Target Hour (0-23)</label>
+                <input type="number" min="0" max="23" name="demand_hour" id="demand_hour" required
+                  class="mt-1 focus:ring-purple-500 focus:border-purple-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md h-10 px-3">
+              </div>
+
+              <div>
+                <label for="demand_weekday" class="block text-sm font-medium text-gray-700">Weekday</label>
+                <select name="demand_weekday" id="demand_weekday"
+                  class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm h-10">
+                  <option value="0">Monday</option>
+                  <option value="1">Tuesday</option>
+                  <option value="2">Wednesday</option>
+                  <option value="3">Thursday</option>
+                  <option value="4">Friday</option>
+                  <option value="5">Saturday</option>
+                  <option value="6">Sunday</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit"
+              class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
+              Forecast Demand
+            </button>
+          </form>
+
+          {% if predicted_demand is not none %}
+          <div class="mt-6 rounded-md bg-purple-50 p-4 border border-purple-200">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <i class="fas fa-bullseye text-purple-400"></i>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-purple-800">Forecast Result</h3>
+                <div class="mt-2 text-sm text-purple-700">
+                  <p class="text-lg font-bold">Projected Demand: {{ predicted_demand }} trips</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

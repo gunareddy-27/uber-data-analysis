@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uber Analytics Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#111827',
+                            card: '#1F2937',
+                            text: '#F3F4F6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Iframe Dark Mode Invert */
+        .dark iframe {
+            filter: invert(0.9) hue-rotate(180deg);
+        }
+
+        .sidebar {
+            transition: all 0.3s;
+        }
+
+        .nav-item.active {
+            background-color: #4F46E5;
+            color: white;
+        }
+
+        .nav-item:hover:not(.active) {
+            background-color: #F3F4F6;
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gray-100 dark:bg-gray-900 h-screen overflow-hidden flex text-gray-900 dark:text-gray-100 transition-colors duration-300">
+
+    <!-- Sidebar -->
+    <aside
+        class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full sidebar transition-colors duration-300">
+        <div class="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-700">
+            <i class="fas fa-taxi text-indigo-600 dark:text-indigo-400 text-2xl mr-3"></i>
+            <span class="font-bold text-xl text-gray-800 dark:text-white">Uber<span
+                    class="text-indigo-600 dark:text-indigo-400">Analytics</span></span>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <button onclick="showSection('dashboard')" id="nav-dashboard"
+                class="nav-item active w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fas fa-chart-pie w-6"></i>
+                Dashboard
+            </button>
+            <button onclick="showSection('predict')" id="nav-predict"
+                class="nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fas fa-brain w-6"></i>
+                AI Predictor
+            </button>
+            <button onclick="showSection('trips')" id="nav-trips"
+                class="nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fas fa-list w-6"></i>
+                Data View
+            </button>
+            <button onclick="showSection('add_data')" id="nav-add_data"
+                class="nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fas fa-plus-circle w-6"></i>
+                Add Data
+            </button>
+        </nav>
+
+        <!-- Dark Mode Toggle -->
+        <div class="px-4 py-2">
+            <button id="theme-toggle"
+                class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i class="fas fa-moon mr-2 dark:hidden"></i>
+                <i class="fas fa-sun mr-2 hidden dark:inline"></i>
+                <span>Toggle Theme</span>
+            </button>
+        </div>
+
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center mb-4 px-2">
+                <div
+                    class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold mr-3">
+                    {{ current_user.username[0] | upper }}
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ current_user.username }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Pro User</p>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}"
+                class="block w-full text-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-hidden flex flex-col relative">
+        <!-- Flash Messages -->
+        <div id="flash-messages" class="absolute top-4 right-4 z-50 w-96 space-y-2">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div
+                class="p-4 rounded-md shadow-lg border-l-4 {% if category == 'success' %}bg-green-50 border-green-500 text-green-700{% elif category == 'danger' %}bg-red-50 border-red-500 text-red-700{% else %}bg-blue-50 border-blue-500 text-blue-700{% endif %} flex items-center justify-between animate-fade-in-down">
+                <div class="flex items-center">
+                    <i
+                        class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'danger' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} mr-3"></i>
+                    {{ message }}
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Section: Dashboard -->
+        <div id="section-dashboard" class="h-full overflow-y-auto p-8 no-scrollbar section-view">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Real-time overview of your trip data.</p>
+                </div>
+                <div class="flex space-x-3">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Live
+                        Data</span>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div
+                    class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Trips</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ total_trips }}</p>
+                        </div>
+                        <div
+                            class="p-3 bg-indigo-50 dark:bg-indigo-900 rounded-lg text-indigo-600 dark:text-indigo-200">
+                            <i class="fas fa-car text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Duration</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ avg_duration }} min</p>
+                        </div>
+                        <div class="p-3 bg-green-50 dark:bg-green-900 rounded-lg text-green-600 dark:text-green-200">
+                            <i class="fas fa-clock text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Busiest Hour</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ busiest_hour }}:00</p>
+                        </div>
+                        <div
+                            class="p-3 bg-orange-50 dark:bg-orange-900 rounded-lg text-orange-600 dark:text-orange-200">
+                            <i class="fas fa-hourglass-half text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Models</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">Ready</p>
+                        </div>
+                        <div
+                            class="p-3 bg-purple-50 dark:bg-purple-900 rounded-lg text-purple-600 dark:text-purple-200">
+                            <i class="fas fa-robot text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Efficiency Metrics -->
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 px-1">Efficiency Analytics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Miles -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Distance</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ total_miles }} mi</p>
+                        </div>
+                        <div class="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg text-blue-600 dark:text-blue-200">
+                            <i class="fas fa-road text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Total Time -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Time</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ total_time }} hrs</p>
+                        </div>
+                        <div
+                            class="p-3 bg-indigo-50 dark:bg-indigo-900 rounded-lg text-indigo-600 dark:text-indigo-200">
+                            <i class="fas fa-stopwatch text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Est. Fuel Cost -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Est. Fuel Cost</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ est_fuel_cost }}</p>
+                        </div>
+                        <div class="p-3 bg-red-50 dark:bg-red-900 rounded-lg text-red-600 dark:text-red-200">
+                            <i class="fas fa-gas-pump text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tax Deduction -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tax Deduction</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ est_tax_deduction }}</p>
+                        </div>
+                        <div class="p-3 bg-green-50 dark:bg-green-900 rounded-lg text-green-600 dark:text-green-200">
+                            <i class="fas fa-file-invoice-dollar text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div
+                    class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <h3 class="font-bold text-gray-800 dark:text-gray-200 mb-4">Hourly Trends</h3>
+                    <iframe src="{{ url_for('static', filename='hourly_trips.html') }}?v={{ cache_id }}"
+                        class="w-full h-80 border-none"></iframe>
+                </div>
+                <div
+                    class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <h3 class="font-bold text-gray-800 dark:text-gray-200 mb-4">Daily Activity</h3>
+                    <iframe src="{{ url_for('static', filename='daily_trips.html') }}?v={{ cache_id }}"
+                        class="w-full h-80 border-none"></iframe>
+                </div>
+                <div
+                    class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <h3 class="font-bold text-gray-800 dark:text-gray-200 mb-4">Weekly Patterns</h3>
+                    <iframe src="{{ url_for('static', filename='weekday_trips.html') }}?v={{ cache_id }}"
+                        class="w-full h-80 border-none"></iframe>
+                </div>
+                <div
+                    class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <h3 class="font-bold text-gray-800 dark:text-gray-200 mb-4">Monthly Overview</h3>
+                    <iframe src="{{ url_for('static', filename='monthly_trips.html') }}?v={{ cache_id }}"
+                        class="w-full h-80 border-none"></iframe>
+                </div>
+            </div>
+
+            <!-- Advanced AI Insights -->
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 px-1">Advanced AI Insights</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Route Network -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-200">Route Flow Connectivity</h3>
+                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded">TOP 50
+                            ROUTES</span>
+                    </div>
+                    <iframe src="{{ url_for('static', filename='route_network.html') }}?v={{ cache_id }}"
+                        class="w-full h-[450px] border-none rounded-lg"></iframe>
+                </div>
+                <!-- Anomaly Detection -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-200">Anomaly Detection</h3>
+                        <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded">ISOLATION
+                            FOREST</span>
+                    </div>
+                    <iframe src="{{ url_for('static', filename='anomalies.html') }}?v={{ cache_id }}"
+                        class="w-full h-[450px] border-none rounded-lg"></iframe>
+                </div>
+            </div>
+
+            <!-- Calendar Heatmap -->
+            <div
+                class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-8 transition-colors">
+                <h3 class="font-bold text-gray-800 dark:text-gray-200 mb-4">Yearly Trip Activity</h3>
+                <iframe src="{{ url_for('static', filename='calendar_heatmap.html') }}?v={{ cache_id }}"
+                    class="w-full h-80 border-none rounded-lg"></iframe>
+            </div>
+
+            <!-- Driver Intelligence & Revenue Optimizer -->
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 px-1">Driver Intelligence</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Real-time Hotspot Tip -->
+                <div
+                    class="lg:col-span-1 bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-xl shadow-lg text-white">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-lg">Revenue Hotspot</h3>
+                        <i class="fas fa-fire-alt text-orange-400 animate-pulse"></i>
+                    </div>
+                    <p class="text-indigo-100 text-sm mb-4">Based on historical demand for today at this hour:</p>
+                    <div class="bg-white/10 p-4 rounded-lg backdrop-blur-sm mb-4">
+                        <p class="text-xs uppercase tracking-wider text-indigo-200 font-bold mb-1">Predicted Spike In
+                        </p>
+                        <p class="text-2xl font-black">{{ revenue_optimizer_loc }}</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-indigo-100">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Expected Confidence: <strong>{{ revenue_optimizer_score }}%</strong></span>
+                    </div>
+                    <p class="mt-6 text-xs text-indigo-200 italic">* Head here now to maximize your earnings.</p>
+                </div>
+
+                <!-- Demand Heatmap -->
+                <div
+                    class="lg:col-span-2 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-200">Demand Forecast Heatmap</h3>
+                        <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">LIVE
+                            OPTIMIZER</span>
+                    </div>
+                    <iframe src="{{ url_for('static', filename='demand_forecast_heatmap.html') }}?v={{ cache_id }}"
+                        class="w-full h-80 border-none rounded-lg"></iframe>
+                </div>
+            </div>
+
+            <!-- Clustering -->
+            <div
+                class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-8 transition-colors">
+                <h3 class="font-bold text-gray-800 dark:text-gray-200 mb-4">Advanced Clustering</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <iframe src="{{ url_for('static', filename='kmeans_trip_duration.html') }}?v={{ cache_id }}"
+                        class="w-full h-64 border-none bg-gray-50 dark:bg-gray-700 rounded"></iframe>
+                    <iframe src="{{ url_for('static', filename='kmeans_trip_duration_hist.html') }}?v={{ cache_id }}"
+                        class="w-full h-64 border-none bg-gray-50 dark:bg-gray-700 rounded"></iframe>
+                    <iframe src="{{ url_for('static', filename='kmeans_trip_duration_violin.html') }}?v={{ cache_id }}"
+                        class="w-full h-64 border-none bg-gray-50 dark:bg-gray-700 rounded"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: AI Predictor -->
+        <div id="section-predict" class="h-full overflow-y-auto p-8 no-scrollbar section-view hidden">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">AI Predictor</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Use machine learning models to forecast trip
+                details.</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                <!-- Duration Model -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center mb-6">
+                        <div class="p-3 bg-indigo-100 rounded-lg text-indigo-600 mr-4">
+                            <i class="fas fa-route text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Trip Duration</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Estimate travel time based on distance.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form action="{{ url_for('app_main') }}" method="POST" class="space-y-4">
+                        <input type="hidden" name="active_tab" value="predict">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estimated
+                                Miles</label>
+                            <input type="number" step="any" name="miles" required placeholder="e.g. 12.5"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hour
+                                    (0-23)</label>
+                                <input type="number" min="0" max="23" name="hour" required
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Weekday</label>
+                                <select name="weekday"
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                                    <option value="0">Monday</option>
+                                    <option value="1">Tuesday</option>
+                                    <option value="2">Wednesday</option>
+                                    <option value="3">Thursday</option>
+                                    <option value="4">Friday</option>
+                                    <option value="5">Saturday</option>
+                                    <option value="6">Sunday</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit"
+                            class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition shadow-sm">
+                            Predict Duration
+                        </button>
+                    </form>
+
+                    {% if predicted_duration is not none %}
+                    <div
+                        class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center animate-pulse">
+                        <i class="fas fa-check-circle text-green-500 text-xl mr-3"></i>
+                        <div>
+                            <p class="text-sm font-bold text-green-800">Estimated Duration</p>
+                            <p class="text-lg text-green-900">{{ predicted_duration }} minutes</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Demand Model -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center mb-6">
+                        <div class="p-3 bg-purple-100 rounded-lg text-purple-600 mr-4">
+                            <i class="fas fa-chart-line text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Demand Forecast</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Predict historical demand volume.</p>
+                        </div>
+                    </div>
+
+                    <form action="{{ url_for('app_main') }}" method="POST" class="space-y-4">
+                        <input type="hidden" name="active_tab" value="predict">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target
+                                    Hour</label>
+                                <input type="number" min="0" max="23" name="demand_hour" required
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Weekday</label>
+                                <select name="demand_weekday"
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                                    <option value="0">Monday</option>
+                                    <option value="1">Tuesday</option>
+                                    <option value="2">Wednesday</option>
+                                    <option value="3">Thursday</option>
+                                    <option value="4">Friday</option>
+                                    <option value="5">Saturday</option>
+                                    <option value="6">Sunday</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit"
+                            class="w-full py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition shadow-sm">
+                            Forecast Demand
+                        </button>
+                    </form>
+
+                    {% if predicted_demand is not none %}
+                    <div class="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg flex items-center">
+                        <i class="fas fa-bullseye text-purple-500 text-xl mr-3"></i>
+                        <div>
+                            <p class="text-sm font-bold text-purple-800">Forecast Result</p>
+                            <p class="text-lg text-purple-900">{{ predicted_demand }} trips expected</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- Classification Model -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mt-6 col-span-1 lg:col-span-2 transition-colors">
+                    <div class="flex items-center mb-6">
+                        <div class="p-3 bg-pink-100 rounded-lg text-pink-600 mr-4">
+                            <i class="fas fa-tags text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Trip Classifier</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Predict the Category and Purpose of a
+                                trip.</p>
+                        </div>
+                    </div>
+
+                    <form action="{{ url_for('app_main') }}" method="POST"
+                        class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <input type="hidden" name="active_tab" value="predict">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Miles</label>
+                            <input type="number" step="any" name="class_miles" required placeholder="e.g. 5.5"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hour</label>
+                            <input type="number" min="0" max="23" name="class_hour" required
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Weekday</label>
+                            <select name="class_weekday"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                                <option value="0">Monday</option>
+                                <option value="1">Tuesday</option>
+                                <option value="2">Wednesday</option>
+                                <option value="3">Thursday</option>
+                                <option value="4">Friday</option>
+                                <option value="5">Saturday</option>
+                                <option value="6">Sunday</option>
+                            </select>
+                        </div>
+                        <button type="submit"
+                            class="w-full py-2 bg-pink-600 text-white font-semibold rounded-lg hover:bg-pink-700 transition shadow-sm h-10">
+                            Classify
+                        </button>
+                    </form>
+
+                    {% if predicted_category is not none %}
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-pink-50 border border-pink-200 rounded-lg flex items-center">
+                            <i class="fas fa-briefcase text-pink-500 text-xl mr-3"></i>
+                            <div>
+                                <p class="text-sm font-bold text-pink-800">Predicted Category</p>
+                                <p class="text-lg text-pink-900">{{ predicted_category }}</p>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-pink-50 border border-pink-200 rounded-lg flex items-center">
+                            <i class="fas fa-crosshairs text-pink-500 text-xl mr-3"></i>
+                            <div>
+                                <p class="text-sm font-bold text-pink-800">Predicted Purpose</p>
+                                <p class="text-lg text-pink-900">{{ predicted_purpose }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+
+                <!-- Destination Prediction (Smart Routing) -->
+                <div
+                    class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 col-span-1 lg:col-span-2 mt-6 transition-colors">
+                    <div class="flex items-center mb-6">
+                        <div class="p-3 bg-blue-100 rounded-lg text-blue-600 mr-4">
+                            <i class="fas fa-map-marked-alt text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Smart Destination</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Predict likely destination based on
+                                start location and
+                                time.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form action="{{ url_for('app_main') }}" method="POST"
+                        class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <input type="hidden" name="active_tab" value="predict">
+
+                        <!-- Miles -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Miles
+                                (Est.)</label>
+                            <input type="number" step="any" name="loc_miles" required placeholder="e.g. 5.5"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                        </div>
+
+                        <!-- Purpose -->
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose</label>
+                            <select name="loc_purpose"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                                {% for p in unique_purposes %}
+                                <option value="{{ p }}">{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Category -->
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                            <select name="loc_category"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                                {% for c in unique_categories %}
+                                <option value="{{ c }}">{{ c }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Time -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hour</label>
+                            <input type="number" min="0" max="23" name="loc_hour" required
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Weekday</label>
+                            <select name="loc_weekday"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                                <option value="0">Monday</option>
+                                <option value="1">Tuesday</option>
+                                <option value="2">Wednesday</option>
+                                <option value="3">Thursday</option>
+                                <option value="4">Friday</option>
+                                <option value="5">Saturday</option>
+                                <option value="6">Sunday</option>
+                            </select>
+                        </div>
+
+                        <!-- Submit -->
+                        <div>
+                            <button type="submit"
+                                class="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm h-10">
+                                Predict Stop
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if predicted_stop is not none %}
+                    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center animate-pulse">
+                        <i class="fas fa-map-pin text-blue-500 text-xl mr-3"></i>
+                        <div>
+                            <p class="text-sm font-bold text-blue-800">Likely Destination</p>
+                            <p class="text-lg text-blue-900">{{ predicted_stop }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Trips Table -->
+        <div id="section-trips" class="h-full overflow-y-auto p-8 no-scrollbar section-view hidden">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Data View</h1>
+
+            <!-- Filters -->
+            <div
+                class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 transition-colors">
+                <form action="{{ url_for('app_main') }}" method="POST"
+                    class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                    <input type="hidden" name="filter_trips" value="true">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Start
+                            Date</label>
+                        <input type="date" name="start_date"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+                        <input type="date" name="end_date"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Min Miles</label>
+                        <input type="number" step="any" name="min_miles" placeholder="0"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose</label>
+                        <select name="purpose"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 dark:text-white">
+                            <option value="">All Purposes</option>
+                            {% for p in unique_purposes %}
+                            <option value="{{ p }}">{{ p }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                        <select name="category"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 dark:text-white">
+                            <option value="">All Categories</option>
+                            {% for c in unique_categories %}
+                            <option value="{{ c }}">{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="md:col-span-5 flex justify-end space-x-2">
+                        <button type="submit" name="export_csv" value="true"
+                            class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            <i class="fas fa-file-csv mr-2"></i> Export CSV
+                        </button>
+                        <button type="submit" name="export_json" value="true"
+                            class="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors shadow-sm icon-btn">
+                            <i class="fas fa-file-code mr-2"></i> Export JSON
+                        </button>
+                        <button type="submit"
+                            class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <div
+                            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-900">
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for trip in trips %}
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                                            {{ trip['START_DATE'] }}</td>
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {{ trip['END_DATE'] }}</td>
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
+                                            {{ trip['MILES']
+                                            }}</td>
+                                        <td
+                                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {{ trip['PURPOSE'] }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                                {{ trip['CATEGORY'] }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+            </div>
+
+            <!-- Section: Add Data -->
+            <div id="section-add_data" class="h-full overflow-y-auto p-8 no-scrollbar section-view hidden">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Add New Trip</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Add new trip data to the dataset. This will
+                    automatically retrain
+                    the predictive models.</p>
+
+                <div
+                    class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 max-w-3xl transition-colors">
+                    <form action="{{ url_for('app_main') }}" method="POST" class="space-y-6">
+                        <input type="hidden" name="active_tab" value="add_data">
+                        <input type="hidden" name="add_trip" value="true">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start
+                                    Date & Time</label>
+                                <input type="datetime-local" name="add_start" required
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date
+                                    & Time</label>
+                                <input type="datetime-local" name="add_end" required
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                                <select name="add_category" required
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                                    <option value="Business">Business</option>
+                                    <option value="Personal">Personal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose</label>
+                                <input type="text" name="add_purpose" list="purposes_list" placeholder="e.g. Meeting"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                                <datalist id="purposes_list">
+                                    {% for p in unique_purposes %}
+                                    <option value="{{ p }}">
+                                        {% endfor %}
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start
+                                    Location</label>
+                                <input type="text" name="add_start_loc" required placeholder="City or Place"
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stop
+                                    Location</label>
+                                <input type="text" name="add_stop_loc" required placeholder="City or Place"
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Miles
+                                (Distance)</label>
+                            <input type="number" step="any" name="add_miles" required placeholder="e.g. 10.5"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white dark:bg-gray-700 dark:text-white">
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit"
+                                class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-md flex items-center justify-center">
+                                <i class="fas fa-plus-circle mr-2"></i> Add Trip & Update Models
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+    </main>
+
+    <!-- Simple Tab Switching Logic -->
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section-view').forEach(el => el.classList.add('hidden'));
+            // Remove active state from nav
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active');
+                el.classList.remove('bg-indigo-600', 'text-white');
+                el.classList.add('text-gray-700');
+            });
+
+            // Show target section
+            document.getElementById('section-' + sectionId).classList.remove('hidden');
+
+            // Set active nav
+            const navBtn = document.getElementById('nav-' + sectionId);
+            navBtn.classList.add('active', 'bg-indigo-600', 'text-white');
+            navBtn.classList.remove('text-gray-700');
+
+            // Save state (optional)
+            localStorage.setItem('activeTab', sectionId);
+        }
+
+        // Initialize from server state (if form posted) or localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const serverActiveTab = "{{ active_tab }}";
+            if (serverActiveTab && serverActiveTab !== 'None') {
+                showSection(serverActiveTab);
+            } else {
+                const stored = localStorage.getItem('activeTab');
+                showSection(stored || 'dashboard');
+            }
+
+            // Theme Toggle Logic
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const htmlElement = document.documentElement;
+
+            // Check saved preference
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                htmlElement.classList.add('dark');
+            } else {
+                htmlElement.classList.remove('dark');
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                if (htmlElement.classList.contains('dark')) {
+                    htmlElement.classList.remove('dark');
+                    localStorage.theme = 'light';
+                } else {
+                    htmlElement.classList.add('dark');
+                    localStorage.theme = 'dark';
+                }
+            });
+        });
+    </script>
+
+    <!-- AI Chatbot Widget -->
+    <div class="fixed bottom-6 right-6 z-50">
+        <button id="chatbot-toggle"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-4 shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
+            <i class="fas fa-comment-dots text-2xl"></i>
+        </button>
+
+        <div id="chatbot-window"
+            class="hidden absolute bottom-16 right-0 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col transition-all duration-300 transform origin-bottom-right">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
+                <h3 class="font-bold">Uber Assistant</h3>
+                <div class="flex items-center space-x-3">
+                    <button id="chatbot-sound"
+                        class="text-indigo-200 hover:text-white focus:outline-none transition-colors"
+                        title="Toggle Voice">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    <button id="chatbot-close"
+                        class="text-indigo-200 hover:text-white focus:outline-none transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 p-4 h-64 overflow-y-auto space-y-3" id="chatbot-messages">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 bg-indigo-100 rounded-full p-2 mr-3">
+                        <i class="fas fa-robot text-indigo-600"></i>
+                    </div>
+                    <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-sm text-gray-800 dark:text-gray-200">
+                        Hi! I can help you analyze your rides. Try asking "How many trips did I take?" or "What is my
+                        busiest hour?"
+                    </div>
+                </div>
+            </div>
+            <div class="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                <div class="flex items-center">
+                    <button id="chatbot-mic"
+                        class="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 p-2.5 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-lg hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <input type="text" id="chatbot-input" placeholder="Type or speak..."
+                        class="flex-1 p-2.5 border border-gray-300 dark:border-gray-600 focus:outline-none dark:bg-gray-800 dark:text-white text-sm">
+                    <button id="chatbot-send"
+                        class="bg-indigo-600 text-white px-4 py-2.5 rounded-r-lg hover:bg-indigo-700 text-sm transition-colors shadow-sm">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Chatbot Logic
+        const toggleChat = document.getElementById('chatbot-toggle');
+        const chatWindow = document.getElementById('chatbot-window');
+        const closeChat = document.getElementById('chatbot-close');
+        const chatInput = document.getElementById('chatbot-input');
+        const chatSend = document.getElementById('chatbot-send');
+        const chatMessages = document.getElementById('chatbot-messages');
+        const soundBtn = document.getElementById('chatbot-sound');
+        const micBtn = document.getElementById('chatbot-mic');
+
+        let isSoundOn = true;
+        let isListening = false;
+
+        if (soundBtn) {
+            soundBtn.addEventListener('click', () => {
+                isSoundOn = !isSoundOn;
+                soundBtn.innerHTML = isSoundOn ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
+                if (!isSoundOn) window.speechSynthesis.cancel();
+            });
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                isListening = true;
+                micBtn.innerHTML = '<i class="fas fa-circle text-red-500 animate-pulse"></i>';
+                chatInput.placeholder = "Listening...";
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                chatInput.placeholder = "Type or speak...";
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                chatInput.value = transcript;
+                handleChat();
+            };
+
+            if (micBtn) {
+                micBtn.addEventListener('click', () => {
+                    if (isListening) recognition.stop();
+                    else recognition.start();
+                });
+            }
+        } else {
+            if (micBtn) micBtn.style.display = 'none';
+        }
+
+        function speak(text) {
+            if (!isSoundOn) return;
+            const utterance = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(utterance);
+        }
+
+        toggleChat.addEventListener('click', () => {
+            chatWindow.classList.toggle('hidden');
+        });
+
+        closeChat.addEventListener('click', () => {
+            chatWindow.classList.add('hidden');
+        });
+
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = sender === 'user' ? "flex items-end justify-end" : "flex items-start";
+
+            const bubble = document.createElement('div');
+            bubble.className = sender === 'user'
+                ? "bg-indigo-600 text-white p-3 rounded-lg text-sm max-w-[80%]"
+                : "bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-sm text-gray-800 dark:text-gray-200 max-w-[80%]";
+            bubble.innerText = text;
+
+            if (sender === 'bot') {
+                const icon = document.createElement('div');
+                icon.className = "flex-shrink-0 bg-indigo-100 rounded-full p-2 mr-3";
+                icon.innerHTML = '<i class="fas fa-robot text-indigo-600"></i>';
+                div.appendChild(icon);
+
+                speak(text);
+            }
+
+            div.appendChild(bubble);
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function handleChat() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            addMessage(text, 'user');
+            chatInput.value = '';
+
+            // Simple heuristic response
+            setTimeout(() => {
+                let response = "I'm still learning, but you can explore the dashboard for more insights!";
+                const lower = text.toLowerCase();
+
+                if (lower.includes('trips')) response = "You have taken {{ total_trips }} trips in total. Check the Dashboard for details.";
+                else if (lower.includes('busy') || lower.includes('hour')) response = "Your busiest hour is around {{ busiest_hour }}:00.";
+                else if (lower.includes('duration') || lower.includes('long')) response = "Your average trip duration is {{ avg_duration }} minutes.";
+                else if (lower.includes('hello') || lower.includes('hi')) response = "Hello! Ready to analyze your data?";
+
+                addMessage(response, 'bot');
+            }, 800);
+
+            if (lower.includes('bye')) {
+                setTimeout(() => addMessage("Goodbye! Safe travels.", 'bot'), 800);
+            }
+        }
+
+        chatSend.addEventListener('click', handleChat);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleChat();
+        });
+    </script>
+
+</body>
+
+</html>

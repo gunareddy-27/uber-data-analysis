@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header Section -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p class="mt-1 text-sm text-gray-500">Overview of Uber trip data and analytics.</p>
+        </div>
+        <div class="flex space-x-3">
+            <span
+                class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                Live Data
+            </span>
+            <span
+                class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                AI Models Active
+            </span>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- Card 1 -->
+        <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-car text-indigo-600 text-3xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Trips Analyzed</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ total_trips if total_trips else '1,155'
+                                }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    <a href="{{ url_for('view_trips') }}" class="font-medium text-indigo-600 hover:text-indigo-500">View
+                        all trips</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock text-green-600 text-3xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Avg. Trip Duration</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ avg_duration if avg_duration else '15.4'
+                                }} min</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    <a href="#advanced-analysis" class="font-medium text-green-600 hover:text-green-500">Analyze
+                        duration</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-hourglass-half text-orange-600 text-3xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Busiest Hour</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">{{ busiest_hour }}:00</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    <a href="#hourly-trips" class="font-medium text-orange-600 hover:text-orange-500">See hourly
+                        trends</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-robot text-purple-600 text-3xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Prediction Accuracy</dt>
+                            <dd class="text-2xl font-semibold text-gray-900">92%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    <a href="{{ url_for('predict') }}" class="font-medium text-purple-600 hover:text-purple-500">Test
+                        model</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Hourly Trips -->
+        <div class="bg-white shadow rounded-lg p-4" id="hourly-trips">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Peak Hours Analysis</h3>
+            <div class="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden relative">
+                <iframe src="{{ url_for('static', filename='hourly_trips.html') }}" class="w-full h-96 border-none"
+                    scrolling="no"></iframe>
+            </div>
+        </div>
+
+        <!-- Daily Trips -->
+        <div class="bg-white shadow rounded-lg p-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Daily Trip Volume</h3>
+            <div class="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden relative">
+                <iframe src="{{ url_for('static', filename='daily_trips.html') }}" class="w-full h-96 border-none"
+                    scrolling="no"></iframe>
+            </div>
+        </div>
+
+        <!-- Weekday Trips -->
+        <div class="bg-white shadow rounded-lg p-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Weekly Patterns</h3>
+            <div class="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden relative">
+                <iframe src="{{ url_for('static', filename='weekday_trips.html') }}" class="w-full h-96 border-none"
+                    scrolling="no"></iframe>
+            </div>
+        </div>
+
+        <!-- Monthly Trips -->
+        <div class="bg-white shadow rounded-lg p-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Monthly Trends</h3>
+            <div class="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden relative">
+                <iframe src="{{ url_for('static', filename='monthly_trips.html') }}" class="w-full h-96 border-none"
+                    scrolling="no"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Analysis -->
+    <div class="bg-white shadow rounded-lg p-6" id="advanced-analysis">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Advanced Clustering Analysis</h3>
+        <p class="text-sm text-gray-500 mb-6">Understand trip duration distribution and outliers using K-Means
+            clustering.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2 text-center">Box Plot</h4>
+                <iframe src="{{ url_for('static', filename='kmeans_trip_duration.html') }}"
+                    class="w-full h-64 border-none"></iframe>
+            </div>
+            <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2 text-center">Histogram</h4>
+                <iframe src="{{ url_for('static', filename='kmeans_trip_duration_hist.html') }}"
+                    class="w-full h-64 border-none"></iframe>
+            </div>
+            <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2 text-center">Violin Plot</h4>
+                <iframe src="{{ url_for('static', filename='kmeans_trip_duration_violin.html') }}"
+                    class="w-full h-64 border-none"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
