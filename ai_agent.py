@@ -722,6 +722,42 @@ def detect_industry_context(df):
             
     return {'industry': 'General / Cross-Industry', 'recommended_kpis': ['Revenue Growth', 'Target Variable Variance', 'Efficiency Ratios']}
 
+def generate_data_dictionary(df):
+    """
+    Auto Dataset Documentation Generator:
+    Generates a full schema, data dictionary, and plain-English inferred column meanings.
+    """
+    dictionary = []
+    for col in df.columns:
+        dtype = str(df[col].dtype)
+        missing = df[col].isna().sum()
+        unique = df[col].nunique()
+        
+        # Inferred Meaning logic
+        meaning = ""
+        if pd.api.types.is_numeric_dtype(df[col]):
+            meaning = f"Numeric feature. Ranges from {df[col].min()} to {df[col].max()}."
+            if unique < 10: meaning += " Low unique count suggests it might be categorically encoded."
+        elif pd.api.types.is_datetime64_any_dtype(df[col]):
+            meaning = f"Temporal data. Spans from {df[col].min().date()} through {df[col].max().date()}."
+        else:
+            top_val = df[col].mode()[0] if not df[col].mode().empty else 'N/A'
+            meaning = f"Categorical or textual data. Most common value is '{top_val}'."
+            if unique == 2: meaning += " Binary indicator."
+            elif unique == len(df): meaning += " Primary key or unique identifier (possibly UUID/Hash)."
+            
+        # Clean type formatting
+        clean_type = dtype.replace('object', 'Text/Category').replace('float64', 'Decimal').replace('int64', 'Integer').replace('datetime64[ns]', 'Timestamp')
+        
+        dictionary.append({
+            'column': col,
+            'type': clean_type,
+            'missing': f"{(missing/len(df))*100:.1f}%",
+            'unique': unique,
+            'meaning': meaning
+        })
+    return dictionary
+
 # ──────────────────────────────────────────────
 # 5. FULL ANALYSIS PIPELINE
 # ──────────────────────────────────────────────
@@ -811,10 +847,14 @@ def analyze_csv(filepath):
         'technical': tech_text
     }
 
+    # Auto Dataset Documentation Generator
+    data_dictionary = generate_data_dictionary(df_clean)
+
     return {
         'session_id': session_id,
         'summary': summary,
         'cleaning_report': cleaning_report,
+        'data_dictionary': data_dictionary,
         'insights': insights,
         'charts': charts,
         'predictions': predictions,
