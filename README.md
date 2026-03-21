@@ -22,6 +22,8 @@ Upload any CSV (max 50MB) and let the autonomous AI agent to completely analyze 
 - **PDF Export:** Click **"Download Report PDF"** for a fully formatted, print-ready document of the agent's findings.
 
 **Advanced ML & Startup-Grade Capabilities within the Agent:**
+- **No-Code AI Workflow Builder:** A visually interactive drag-and-drop pipeline interface that sequences the execution of Data Ingestion, Auto Cleansing, Auto-ML Training, and Knowledge Graph reporting operations.
+- **Auto Dataset Documentation Generator:** Automatically iterates through uploaded dimensions to produce a fully formatted Data Dictionary. It statistically infers column contexts (e.g. tracking booleans, categorical IDs, timestamp sequences) and documents missing densities.
 - **Context-Aware AI (Industry Detection):** Automatically scans column headers to classify the data's domain (e.g., Finance, Retail, Healthcare) and dynamically tailors its business recommendations and KPIs.
 - **Autonomous Hypothesis Engine:** Generates and runs raw statistical algorithms (Welch’s T-Tests) across categorical brackets to autonomously prove or disprove correlations with strict P-Value significance.
 - **Conversational Data Agent:** Includes an onboard AI Chatbot that memorizes the generated dataset payload in the window, allowing users to ask specific natural language questions about their generated statistics, anomalies, and forecasts.
