@@ -1329,6 +1329,22 @@
                     </div>`;
                 }
                 
+                // Hypothesis Testing
+                if (data.advanced_ml.hypotheses && data.advanced_ml.hypotheses.length > 0) {
+                    const hs = data.advanced_ml.hypotheses;
+                    amlHTML += `<div class="bg-black/20 p-4 rounded-xl border border-white/10 shadow-inner md:col-span-2">
+                        <h4 class="font-bold text-sky-400 mb-2 flex items-center gap-2"><i class="fas fa-flask"></i>Autonomous Hypothesis Engine (Statistically Tested)</h4>
+                        <div class="space-y-3">
+                            ${hs.map(h => `
+                                <div class="bg-white/5 p-3 rounded-lg border ${h.significant ? 'border-sky-500/50' : 'border-white/10'}">
+                                    <p class="text-xs font-bold text-sky-300 mb-1 border-b border-white/10 pb-1">${h.hypothesis} <span class="float-right font-mono font-normal opacity-50">${h.test_type}</span></p>
+                                    <p class="text-sm text-gray-300 leading-relaxed mt-2">${h.conclusion.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+                }
+                
                 document.getElementById('agent-advanced-content').innerHTML = amlHTML;
             } else {
                 document.getElementById('agent-advanced-ml').classList.add('hidden');

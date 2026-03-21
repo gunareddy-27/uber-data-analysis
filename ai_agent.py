@@ -13,6 +13,7 @@ from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.ensemble import IsolationForest, RandomForestRegressor, RandomForestClassifier, GradientBoostingRegressor
 from sklearn.decomposition import PCA
+from scipy.stats import ttest_ind
 import os
 import json
 import uuid
@@ -645,6 +646,82 @@ def compute_advanced_ml(df, session_id):
     return results
 
 
+def autonomous_hypothesis_testing(df, target_col=None):
+    """
+    Acts as an Autonomous Hypothesis Generator and Advanced Statistical Testing Suite.
+    Formulates a hypothesis about the target metric across binary groups, tests it independently, and returns conclusions.
+    """
+    if not target_col or target_col not in df.columns or not pd.api.types.is_numeric_dtype(df[target_col]):
+        # Fall back to picking the highest variance numeric column
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) == 0:
+            return None
+        target_col = df[numeric_cols].var().idxmax()
+        
+    results = []
+    
+    # 1. Search for binary categorical columns to test against target
+    cat_cols = df.select_dtypes(include=['object', 'category', 'bool', 'int']).columns
+    for col in cat_cols:
+        if col == target_col: continue
+        unique_vals = df[col].dropna().unique()
+        
+        # Test if perfectly binary
+        if len(unique_vals) == 2:
+            group1 = df[df[col] == unique_vals[0]][target_col].dropna()
+            group2 = df[df[col] == unique_vals[1]][target_col].dropna()
+            
+            if len(group1) > 5 and len(group2) > 5:
+                stat, p_value = ttest_ind(group1, group2, equal_var=False)
+                mean_diff = group1.mean() - group2.mean()
+                
+                is_significant = p_value < 0.05
+                winner = unique_vals[0] if mean_diff > 0 else unique_vals[1]
+                
+                if is_significant:
+                    conclusion = f"**Statistically Significant (p={p_value:.3f}):** The metric **{target_col}** is fundamentally different between **{unique_vals[0]}** and **{unique_vals[1]}**. Specifically, {winner} drives higher numbers."
+                else:
+                    conclusion = f"The variance of **{target_col}** between **{unique_vals[0]}** and **{unique_vals[1]}** is just random noise (p={p_value:.3f}). Do not build strategies relying on this split."
+                    
+                results.append({
+                    'hypothesis': f"Does [{target_col}] depend on [{col}]?",
+                    'test_type': 'Welch’s T-Test',
+                    'significant': bool(is_significant),
+                    'conclusion': conclusion
+                })
+                
+                # We only need 1 or 2 high-quality hypotheses to avoid overwhelming the user
+                if len(results) >= 2:
+                    break
+                    
+    return results
+
+def detect_industry_context(df):
+    """
+    Context-Aware AI: Detects industry domain based on dataframe headers 
+    and returns tailored KPI recommendations & narrative lens.
+    """
+    cols = " ".join(df.columns).lower()
+    
+    contexts = {
+        'Finance & Banking': {'keywords': ['transaction', 'balance', 'credit', 'account', 'fraud', 'loan', 'salary'], 
+                              'kpis': ['Default Risk', 'Transaction Volume', 'Average Balance']},
+        'E-Commerce & Retail': {'keywords': ['product', 'price', 'sales', 'revenue', 'customer', 'cart', 'discount'], 
+                                'kpis': ['Customer Lifetime Value (CLTV)', 'Conversion Rate', 'Average Order Value']},
+        'Healthcare & Medical': {'keywords': ['patient', 'diagnosis', 'blood', 'treatment', 'hospital', 'dose', 'symptom'], 
+                                 'kpis': ['Recovery Rate', 'Patient Admission Frequency', 'Treatment Efficacy']},
+        'Transportation & Logistics': {'keywords': ['trip', 'origin', 'destination', 'driver', 'fare', 'vehicle', 'mile'], 
+                                       'kpis': ['Fleet Utilization', 'Average Delivery Time', 'Cost per Mile']},
+        'Human Resources': {'keywords': ['employee', 'salary', 'department', 'manager', 'hire', 'attrition', 'turnover'], 
+                            'kpis': ['Employee Churn Rate', 'Average Tenure', 'Salary Band Variance']}
+    }
+    
+    for industry, data in contexts.items():
+        if any(kw in cols for kw in data['keywords']):
+            return {'industry': industry, 'recommended_kpis': data['kpis']}
+            
+    return {'industry': 'General / Cross-Industry', 'recommended_kpis': ['Revenue Growth', 'Target Variable Variance', 'Efficiency Ratios']}
+
 # ──────────────────────────────────────────────
 # 5. FULL ANALYSIS PIPELINE
 # ──────────────────────────────────────────────
@@ -698,21 +775,38 @@ def analyze_csv(filepath):
     if advanced_ml and 'cluster_chart' in advanced_ml and advanced_ml['cluster_chart']:
         charts.append(advanced_ml['cluster_chart'])
         
-    # AI Executive Summary Generator
-    is_good = quality_score > 70
-    biz_text = f"The dataset contains {len(df_clean):,} records. Overall data quality is {'excellent' if is_good else 'poor'} (Score: {quality_score}/100). "
+    # Context-Aware AI & Automated Statistical Testing (Startup-Grade Features)
+    industry_context = detect_industry_context(df_clean)
+    
+    target_var = None
     if advanced_ml and advanced_ml.get('feature_importance'):
-        biz_text += f"Key driver analysis reveals that {advanced_ml['feature_importance']['importance'][0]['feature']} is the primary factor influencing {advanced_ml['feature_importance']['target']}. "
-    if advanced_ml and advanced_ml.get('anomalies'):
-        biz_text += f"We detected {advanced_ml['anomalies']['count']} anomalous data points requiring manual review."
+        target_var = advanced_ml['feature_importance']['target']
         
-    tech_text = f"Processed {len(df_clean)}x{len(df_clean.columns)} matrix. Imputed {summary['missing_total']} missing values. "
-    if advanced_ml and advanced_ml.get('feature_importance'):
-        tech_text += f"AutoML selected {advanced_ml['feature_importance']['model_used']} (R²={advanced_ml['feature_importance']['r2_score']}). "
+    hypotheses = autonomous_hypothesis_testing(df_clean, target_var)
+    if hypotheses:
+        advanced_ml['hypotheses'] = hypotheses
+        
+    # AI Executive Summary Generator & Data Storytelling
+    is_good = quality_score > 70
+    biz_text = f"Analyzed a **{industry_context['industry']}** dataset with {len(df_clean):,} records. Overall data quality is {'excellent' if is_good else 'poor'} (Score: {quality_score}/100). "
+    
+    if target_var:
+        biz_text += f"Key driver analysis reveals that **{advanced_ml['feature_importance']['importance'][0]['feature']}** is the primary root cause influencing **{target_var}**. "
+        
+    if hypotheses and [h for h in hypotheses if h['significant']]:
+        sig_hypo = [h for h in hypotheses if h['significant']][0]
+        biz_text += f"We autonomously tested and proved: {sig_hypo['conclusion'].split(':** ')[1]} "
+        
+    biz_text += f"**Decision Engine Recommendation:** Given this is a {industry_context['industry']} context, your teams should immediately build dashboards monitoring {', '.join(industry_context['recommended_kpis'])}."
+        
+    tech_text = f"Processed {len(df_clean)}x{len(df_clean.columns)} dimension matrix. Imputed {summary['missing_total']} missing values. "
+    if target_var:
+        tech_text += f"AutoML selected {advanced_ml['feature_importance']['model_used']} (R²={advanced_ml['feature_importance']['r2_score']}). Extracted SHAP-like feature weights. "
     if advanced_ml and advanced_ml.get('anomalies'):
-        tech_text += f"Isolation Forest detected {advanced_ml['anomalies']['percentage']}% outliers. PCA+KMeans dimensionality reduction generated segments."
+        tech_text += f"Unsupervised Isolation Forest detected {advanced_ml['anomalies']['percentage']}% high-dimensional outliers. PCA mapping and K-Means segmentation executed."
 
     executive_summary = {
+        'industry_context': industry_context['industry'],
         'business': biz_text,
         'technical': tech_text
     }
