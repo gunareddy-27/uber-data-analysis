@@ -1223,6 +1223,9 @@
         }
 
         function agentRenderResults(data) {
+            window.lastAgentData = data;
+            window.agentCols = data.summary.columns.map(c => c.toLowerCase());
+            
             agentSessionId = data.session_id;
             agentShowLoading(false);
             document.getElementById('agent-results').classList.remove('hidden');
@@ -1546,53 +1549,112 @@
             chatWindow.classList.add('hidden');
         });
 
-        function addMessage(text, sender) {
+        function addMessage(htmlContent, sender) {
             const div = document.createElement('div');
             div.className = sender === 'user' ? "flex items-end justify-end" : "flex items-start";
 
             const bubble = document.createElement('div');
             bubble.className = sender === 'user'
                 ? "bg-indigo-600 text-white p-3 rounded-lg text-sm max-w-[80%]"
-                : "bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-sm text-gray-800 dark:text-gray-200 max-w-[80%]";
-            bubble.innerText = text;
+                : "bg-gray-100 dark:bg-gray-700 p-3 rounded-lg text-sm text-gray-800 dark:text-gray-200 max-w-[80%] leading-relaxed";
+            bubble.innerHTML = htmlContent;
 
             if (sender === 'bot') {
                 const icon = document.createElement('div');
-                icon.className = "flex-shrink-0 bg-indigo-100 rounded-full p-2 mr-3";
+                icon.className = "flex-shrink-0 bg-indigo-100 rounded-full p-2 mr-3 mt-1";
                 icon.innerHTML = '<i class="fas fa-robot text-indigo-600"></i>';
                 div.appendChild(icon);
 
-                speak(text);
+                // Strip HTML for speech
+                const rawText = htmlContent.replace(/<[^>]*>?/gm, '');
+                speak(rawText);
             }
 
             div.appendChild(bubble);
             chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Wait for DOM
+            setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 10);
         }
 
         function handleChat() {
-            const text = chatInput.value.trim();
-            if (!text) return;
+            const rawText = chatInput.value.trim();
+            if (!rawText) return;
 
-            addMessage(text, 'user');
+            addMessage(rawText, 'user');
             chatInput.value = '';
 
-            // Simple heuristic response
             setTimeout(() => {
-                let response = "I'm still learning, but you can explore the dashboard for more insights!";
-                const lower = text.toLowerCase();
+                const lower = rawText.toLowerCase();
+                let response = "";
 
-                if (lower.includes('trips')) response = "You have taken {{ total_trips }} trips in total. Check the Dashboard for details.";
-                else if (lower.includes('busy') || lower.includes('hour')) response = "Your busiest hour is around {{ busiest_hour }}:00.";
-                else if (lower.includes('duration') || lower.includes('long')) response = "Your average trip duration is {{ avg_duration }} minutes.";
-                else if (lower.includes('hello') || lower.includes('hi')) response = "Hello! Ready to analyze your data?";
+                // 1. Context-Aware Data Agent (Answers based on uploaded CSV)
+                if (window.lastAgentData) {
+                    const d = window.lastAgentData;
+                    
+                    if (lower.includes('row') || lower.includes('size')) {
+                        response = `The analyzed dataset has <strong>${d.summary.rows.toLocaleString()}</strong> rows and <strong>${d.summary.cols}</strong> columns.`;
+                    } else if (lower.includes('missing') || lower.includes('empty')) {
+                        response = `There were <strong>${d.summary.missing_total.toLocaleString()}</strong> missing cells in total, but my data cleaning module automatically imputed them.`;
+                    } else if (lower.includes('quality') || lower.includes('score')) {
+                        response = `The data quality score is <strong>${d.summary.quality_score}/100</strong>. ${d.executive_summary ? d.executive_summary.business.split('.')[1] + '.' : ''}`;
+                    } else if (lower.includes('anomalies') || lower.includes('outlier')) {
+                        if (d.advanced_ml && d.advanced_ml.anomalies) {
+                            response = d.advanced_ml.anomalies.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        } else {
+                            response = "I did not detect any significant high-dimensional anomalies in this dataset via Isolation Forest.";
+                        }
+                    } else if (lower.includes('important') || lower.includes('driver') || lower.includes('predict') || lower.includes('cause')) {
+                        if (d.advanced_ml && d.advanced_ml.feature_importance) {
+                            const fi = d.advanced_ml.feature_importance;
+                            response = `Based on True AutoML execution (${fi.model_used}), <strong>${fi.importance[0].feature}</strong> is the root cause driving changes in <strong>${fi.target}</strong>.`;
+                        } else {
+                            response = "I couldn't run an AutoML feature extraction because there weren't enough numeric columns to form a regression matrix.";
+                        }
+                    } else if (lower.includes('trend') || lower.includes('future') || lower.includes('predict')) {
+                        if (d.predictions && d.predictions.length > 0 && d.predictions[0].column !== 'N/A') {
+                            response = d.predictions[0].text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        } else {
+                            response = "There is not enough sequential or linear data to confidently predict future trends.";
+                        }
+                    } else if (lower.includes('summary') || lower.includes('explain')) {
+                        if (d.executive_summary) {
+                            response = d.executive_summary.business;
+                        } else {
+                            response = "The data is successfully analyzed and charted. View the dashboard to see more.";
+                        }
+                    } else {
+                        // Check if they are asking about a specific column mapped in insights
+                        let foundCol = null;
+                        if (window.agentCols) {
+                            for (let c of window.agentCols) {
+                                if (lower.includes(c)) { foundCol = c; break; }
+                            }
+                        }
+                        if (foundCol) {
+                            const match = d.insights.find(i => i.category.toLowerCase().includes(foundCol));
+                            if (match) {
+                                response = match.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                            }
+                        }
+                    }
+                }
+
+                // 2. Default Uber Dashboard Fallbacks
+                if (!response) {
+                    if (lower.includes('trips')) response = "You have taken <strong>{{ total_trips }}</strong> trips in total. Check the Dashboard for details.";
+                    else if (lower.includes('busy') || lower.includes('hour')) response = "Your busiest hour is around <strong>{{ busiest_hour }}:00</strong>.";
+                    else if (lower.includes('duration') || lower.includes('long')) response = "Your average trip duration is <strong>{{ avg_duration }}</strong> minutes.";
+                    else if (lower.includes('hello') || lower.includes('hi')) response = "Hello! I am your AI Data Agent. Ask me questions about your Uber dashboard, or upload a dataset in the Agent tab so I can analyze it for you!";
+                    else if (lower.includes('bye')) response = "Goodbye! Safe travels.";
+                    else {
+                        response = window.lastAgentData 
+                            ? "I can answer specific questions about rows, missing values, data quality scores, anomalies, trends, or root cause features for the dataset you just uploaded." 
+                            : "I'm still learning, but you can explore the dashboard for more insights, or upload a CSV in the AI Agent tab for me to analyze!";
+                    }
+                }
 
                 addMessage(response, 'bot');
             }, 800);
-
-            if (lower.includes('bye')) {
-                setTimeout(() => addMessage("Goodbye! Safe travels.", 'bot'), 800);
-            }
         }
 
         chatSend.addEventListener('click', handleChat);
