@@ -95,6 +95,16 @@
                 <i class="fas fa-plus-circle w-6"></i>
                 Add Data
             </button>
+            <button onclick="showSection('warehouse')" id="nav-warehouse"
+                class="nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fas fa-database w-6"></i>
+                Data Warehouse
+            </button>
+            <button onclick="showSection('agent')" id="nav-agent"
+                class="nav-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fas fa-robot w-6"></i>
+                AI Agent
+            </button>
         </nav>
 
         <!-- Dark Mode Toggle -->
@@ -861,6 +871,240 @@
                 </div>
             </div>
 
+        <!-- Section: Data Warehouse -->
+        <div id="section-warehouse" class="h-full overflow-y-auto p-8 no-scrollbar section-view hidden">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Data Warehouse</h1>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Transportation analytics — Revenue, surge pricing, and demand insights.</p>
+                </div>
+                <div class="flex space-x-3">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">Warehouse</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">KPIs</span>
+                </div>
+            </div>
+
+            <!-- KPI Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Revenue -->
+                <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-xl shadow-lg text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-emerald-100">Total Revenue</p>
+                            <p class="text-3xl font-black mt-1">${{ wh.get('total_revenue', 0) | round(0) | int }}</p>
+                        </div>
+                        <div class="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <i class="fas fa-dollar-sign text-2xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-emerald-100 mt-3"><i class="fas fa-info-circle mr-1"></i>Estimated from distance-based fare model</p>
+                </div>
+                <!-- Avg Fare -->
+                <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-xl shadow-lg text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-blue-100">Average Fare</p>
+                            <p class="text-3xl font-black mt-1">${{ wh.get('avg_fare', 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <i class="fas fa-receipt text-2xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-blue-100 mt-3"><i class="fas fa-chart-line mr-1"></i>Per-trip average across all rides</p>
+                </div>
+                <!-- Top City -->
+                <div class="bg-gradient-to-br from-amber-500 to-orange-600 p-6 rounded-xl shadow-lg text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-amber-100">Top Revenue City</p>
+                            <p class="text-2xl font-black mt-1 truncate">{{ wh.get('top_city', 'N/A') }}</p>
+                        </div>
+                        <div class="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <i class="fas fa-city text-2xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-amber-100 mt-3"><i class="fas fa-trophy mr-1"></i>${{ wh.get('top_city_rev', 0) }} total revenue</p>
+                </div>
+                <!-- Peak Hour -->
+                <div class="bg-gradient-to-br from-rose-500 to-pink-600 p-6 rounded-xl shadow-lg text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-rose-100">Peak Revenue Hour</p>
+                            <p class="text-3xl font-black mt-1">{{ wh.get('peak_hour', 0) }}:00</p>
+                        </div>
+                        <div class="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <i class="fas fa-fire text-2xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-rose-100 mt-3"><i class="fas fa-bolt mr-1"></i>Avg Surge: {{ wh.get('avg_surge', 1.0) }}x multiplier</p>
+                </div>
+            </div>
+
+            <!-- Charts Row 1: Revenue by City + Surge Trends -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-200">Revenue by City</h3>
+                        <span class="px-2 py-1 bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200 text-xs font-bold rounded">TOP 15</span>
+                    </div>
+                    <iframe src="{{ url_for('static', filename='warehouse_revenue_by_city.html') }}?v={{ cache_id }}" class="w-full h-80 border-none rounded-lg"></iframe>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-200">Surge Pricing Trends</h3>
+                        <span class="px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 text-xs font-bold rounded">DYNAMIC</span>
+                    </div>
+                    <iframe src="{{ url_for('static', filename='warehouse_surge_trends.html') }}?v={{ cache_id }}" class="w-full h-80 border-none rounded-lg"></iframe>
+                </div>
+            </div>
+
+            <!-- Charts Row 2: Peak Hours + Demand Heatmap -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-200">Peak Hour Analysis</h3>
+                        <span class="px-2 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200 text-xs font-bold rounded">VOLUME vs FARE</span>
+                    </div>
+                    <iframe src="{{ url_for('static', filename='warehouse_peak_hours.html') }}?v={{ cache_id }}" class="w-full h-80 border-none rounded-lg"></iframe>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-gray-800 dark:text-gray-200">Ride Demand Heatmap</h3>
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200 text-xs font-bold rounded">HOUR × DAY</span>
+                    </div>
+                    <iframe src="{{ url_for('static', filename='warehouse_demand_heatmap.html') }}?v={{ cache_id }}" class="w-full h-80 border-none rounded-lg"></iframe>
+                </div>
+            </div>
+
+            <!-- Chart Row 3: Revenue Sunburst -->
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-8 transition-colors">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-gray-800 dark:text-gray-200">Revenue Breakdown: Day → Hour</h3>
+                    <span class="px-2 py-1 bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-200 text-xs font-bold rounded">SUNBURST</span>
+                </div>
+                <iframe src="{{ url_for('static', filename='warehouse_revenue_sunburst.html') }}?v={{ cache_id }}" class="w-full h-[500px] border-none rounded-lg"></iframe>
+            </div>
+        </div>
+
+        <!-- Section: AI Agent -->
+        <div id="section-agent" class="h-full overflow-y-auto p-8 no-scrollbar section-view hidden">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">AI Data Analyst Agent</h1>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Upload any CSV — get auto-cleaning, visualizations, insights & trend predictions.</p>
+                </div>
+                <div class="flex space-x-3">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 animate-pulse">AI Powered</span>
+                </div>
+            </div>
+
+            <!-- Upload Area -->
+            <div id="agent-upload-area" class="mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Drag & Drop -->
+                    <div id="agent-dropzone" class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-10 text-center hover:border-indigo-500 dark:hover:border-indigo-400 transition-all cursor-pointer bg-white dark:bg-gray-800 group">
+                        <input type="file" id="agent-file-input" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                        <div class="flex flex-col items-center">
+                            <div class="p-5 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-indigo-600 dark:text-indigo-300"></i>
+                            </div>
+                            <p class="text-lg font-bold text-gray-700 dark:text-gray-200 mb-1">Drop your CSV here</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">or click to browse • Max 50MB</p>
+                            <p id="agent-file-name" class="mt-3 text-sm font-medium text-indigo-600 dark:text-indigo-400 hidden"></p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="flex flex-col gap-4">
+                        <button id="agent-analyze-btn" onclick="agentAnalyzeUpload()" disabled
+                            class="flex-1 flex items-center justify-center gap-3 px-6 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-2xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-lg">
+                            <i class="fas fa-magic text-xl"></i>
+                            Analyze Uploaded CSV
+                        </button>
+                        <button onclick="agentAnalyzeUber()"
+                            class="flex-1 flex items-center justify-center gap-3 px-6 py-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-2xl hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg text-lg">
+                            <i class="fas fa-taxi text-xl"></i>
+                            Analyze Uber Dataset
+                        </button>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 text-center">The AI agent will auto-clean, generate charts, provide insights, and predict trends.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="agent-loading" class="hidden mb-8">
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-10 text-center shadow-lg">
+                    <div class="inline-flex items-center gap-1 mb-4">
+                        <div class="w-3 h-3 bg-indigo-500 rounded-full animate-bounce" style="animation-delay:0s"></div>
+                        <div class="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style="animation-delay:0.15s"></div>
+                        <div class="w-3 h-3 bg-pink-500 rounded-full animate-bounce" style="animation-delay:0.3s"></div>
+                    </div>
+                    <p class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">AI Agent is Analyzing...</p>
+                    <p id="agent-loading-step" class="text-sm text-gray-500 dark:text-gray-400">Cleaning data and detecting patterns</p>
+                </div>
+            </div>
+
+            <!-- Results Container -->
+            <div id="agent-results" class="hidden">
+
+                <!-- Cleaning Report -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg"><i class="fas fa-broom text-emerald-600 dark:text-emerald-300 text-lg"></i></div>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">Data Cleaning Report</h3>
+                    </div>
+                    <div id="agent-cleaning" class="space-y-2"></div>
+                </div>
+
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="agent-summary-cards"></div>
+
+                <!-- Insights -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg"><i class="fas fa-lightbulb text-indigo-600 dark:text-indigo-300 text-lg"></i></div>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">AI Insights</h3>
+                        <span class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded">PLAIN ENGLISH</span>
+                    </div>
+                    <div id="agent-insights" class="space-y-3"></div>
+                </div>
+
+                <!-- Charts -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg"><i class="fas fa-chart-area text-purple-600 dark:text-purple-300 text-lg"></i></div>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">Auto-Generated Visualizations</h3>
+                        <span class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-xs font-bold rounded">AUTO</span>
+                    </div>
+                    <div id="agent-charts" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+                </div>
+
+                <!-- Trend Predictions -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-rose-100 dark:bg-rose-900 rounded-lg"><i class="fas fa-crystal-ball text-rose-600 dark:text-rose-300 text-lg"></i></div>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">Trend Predictions</h3>
+                        <span class="px-2 py-0.5 bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300 text-xs font-bold rounded">ML FORECAST</span>
+                    </div>
+                    <div id="agent-predictions" class="space-y-4"></div>
+                </div>
+
+                <!-- Data Preview -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg"><i class="fas fa-table text-gray-600 dark:text-gray-300 text-lg"></i></div>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">Data Preview</h3>
+                        <span class="text-xs text-gray-400">First 10 rows (cleaned)</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="agent-preview-table" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Simple Tab Switching Logic -->
@@ -885,6 +1129,141 @@
 
             // Save state (optional)
             localStorage.setItem('activeTab', sectionId);
+        }
+
+        // ─── AI AGENT LOGIC ───
+        let agentSessionId = null;
+
+        document.getElementById('agent-file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('agent-file-name').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+                document.getElementById('agent-file-name').classList.remove('hidden');
+                document.getElementById('agent-analyze-btn').disabled = false;
+            }
+        });
+
+        // Drag & drop highlight
+        const dropzone = document.getElementById('agent-dropzone');
+        ['dragenter','dragover'].forEach(e => dropzone.addEventListener(e, ev => { ev.preventDefault(); dropzone.classList.add('border-indigo-500','bg-indigo-50','dark:bg-indigo-950'); }));
+        ['dragleave','drop'].forEach(e => dropzone.addEventListener(e, ev => { ev.preventDefault(); dropzone.classList.remove('border-indigo-500','bg-indigo-50','dark:bg-indigo-950'); }));
+        dropzone.addEventListener('drop', ev => {
+            const file = ev.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                document.getElementById('agent-file-input').files = ev.dataTransfer.files;
+                document.getElementById('agent-file-name').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+                document.getElementById('agent-file-name').classList.remove('hidden');
+                document.getElementById('agent-analyze-btn').disabled = false;
+            }
+        });
+
+        function agentShowLoading(show) {
+            document.getElementById('agent-loading').classList.toggle('hidden', !show);
+            document.getElementById('agent-results').classList.add('hidden');
+        }
+
+        function agentAnalyzeUpload() {
+            const fileInput = document.getElementById('agent-file-input');
+            if (!fileInput.files[0]) return;
+            const formData = new FormData();
+            formData.append('csv_file', fileInput.files[0]);
+            agentShowLoading(true);
+
+            fetch('/api/agent/analyze', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => { if (data.error) throw new Error(data.error); agentRenderResults(data); })
+                .catch(err => { agentShowLoading(false); alert('Analysis failed: ' + err.message); });
+        }
+
+        function agentAnalyzeUber() {
+            agentShowLoading(true);
+            document.getElementById('agent-loading-step').textContent = 'Analyzing Uber dataset...';
+            fetch('/api/agent/analyze-uber', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => { if (data.error) throw new Error(data.error); agentRenderResults(data); })
+                .catch(err => { agentShowLoading(false); alert('Analysis failed: ' + err.message); });
+        }
+
+        function agentRenderResults(data) {
+            agentSessionId = data.session_id;
+            agentShowLoading(false);
+            document.getElementById('agent-results').classList.remove('hidden');
+
+            // Cleaning report
+            const cleanDiv = document.getElementById('agent-cleaning');
+            cleanDiv.innerHTML = data.cleaning_report.map(r =>
+                `<div class="flex items-start gap-2"><i class="fas fa-check-circle text-emerald-500 mt-0.5"></i><span class="text-sm text-gray-700 dark:text-gray-300">${r}</span></div>`
+            ).join('');
+
+            // Summary cards
+            const s = data.summary;
+            document.getElementById('agent-summary-cards').innerHTML = [
+                cardHTML('fa-database', 'Rows', s.rows.toLocaleString(), 'indigo'),
+                cardHTML('fa-columns', 'Columns', s.cols, 'purple'),
+                cardHTML('fa-exclamation-circle', 'Missing', s.missing_total.toLocaleString(), s.missing_total > 0 ? 'amber' : 'green'),
+                cardHTML('fa-hdd', 'Memory', s.memory_mb + ' MB', 'blue')
+            ].join('');
+
+            // Insights
+            const insDiv = document.getElementById('agent-insights');
+            insDiv.innerHTML = data.insights.map(ins => {
+                const colors = { indigo:'indigo', blue:'blue', purple:'purple', teal:'teal', rose:'rose', amber:'amber', green:'green', red:'red' };
+                const c = colors[ins.color] || 'gray';
+                return `<div class="flex items-start gap-3 p-3 bg-${c}-50 dark:bg-${c}-950 rounded-xl border border-${c}-200 dark:border-${c}-800">
+                    <i class="fas ${ins.icon} text-${c}-500 mt-1"></i>
+                    <div><span class="text-xs font-bold text-${c}-700 dark:text-${c}-300 uppercase">${ins.category}</span>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5">${ins.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p></div></div>`;
+            }).join('');
+
+            // Charts
+            const chartDiv = document.getElementById('agent-charts');
+            chartDiv.innerHTML = data.charts.map(ch =>
+                `<div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
+                    <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">${ch.title}</h4>
+                    <iframe src="/static/agent_${agentSessionId}/${ch.file}" class="w-full h-72 border-none rounded-lg"></iframe>
+                </div>`
+            ).join('');
+            if (data.charts.length === 0) chartDiv.innerHTML = '<p class="text-gray-400 text-sm">No charts could be generated from this dataset.</p>';
+
+            // Predictions
+            const predDiv = document.getElementById('agent-predictions');
+            predDiv.innerHTML = data.predictions.map(p => {
+                const trendColor = p.trend === 'increasing' ? 'emerald' : p.trend === 'decreasing' ? 'rose' : 'gray';
+                const trendIcon = p.trend === 'increasing' ? 'fa-arrow-trend-up' : p.trend === 'decreasing' ? 'fa-arrow-trend-down' : 'fa-minus';
+                return `<div class="flex items-start gap-4 p-4 bg-${trendColor}-50 dark:bg-${trendColor}-950 rounded-xl border border-${trendColor}-200 dark:border-${trendColor}-800">
+                    <div class="p-2 bg-${trendColor}-100 dark:bg-${trendColor}-900 rounded-lg"><i class="fas ${trendIcon} text-${trendColor}-600 dark:text-${trendColor}-300 text-lg"></i></div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-bold text-gray-800 dark:text-gray-200">${p.column}</span>
+                            <span class="px-2 py-0.5 text-xs font-bold rounded bg-${trendColor}-200 dark:bg-${trendColor}-800 text-${trendColor}-800 dark:text-${trendColor}-200">${p.trend.toUpperCase()}</span>
+                            <span class="text-xs text-gray-400">R² = ${p.r2}</span>
+                        </div>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">${p.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>
+                    </div></div>`;
+            }).join('');
+
+            // Data preview table
+            if (s.preview && s.preview.length > 0) {
+                const cols = Object.keys(s.preview[0]);
+                let tableHTML = '<thead class="bg-gray-50 dark:bg-gray-900"><tr>' +
+                    cols.map(c => `<th class="px-4 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">${c}</th>`).join('') +
+                    '</tr></thead><tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">';
+                s.preview.forEach(row => {
+                    tableHTML += '<tr class="hover:bg-gray-50 dark:hover:bg-gray-700">' +
+                        cols.map(c => `<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">${row[c] != null ? row[c] : ''}</td>`).join('') +
+                        '</tr>';
+                });
+                tableHTML += '</tbody>';
+                document.getElementById('agent-preview-table').innerHTML = tableHTML;
+            }
+        }
+
+        function cardHTML(icon, label, value, color) {
+            return `<div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-${color}-100 dark:bg-${color}-900 rounded-lg"><i class="fas ${icon} text-${color}-600 dark:text-${color}-300"></i></div>
+                    <div><p class="text-xs text-gray-500 dark:text-gray-400">${label}</p><p class="text-lg font-bold text-gray-900 dark:text-gray-100">${value}</p></div>
+                </div></div>`;
         }
 
         // Initialize from server state (if form posted) or localStorage

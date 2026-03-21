@@ -8,7 +8,10 @@ from analysis import analyze_data
 from visualization import plot_analysis
 from clustering import cluster_rides
 import predictor
+import warehouse
+import ai_agent
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -19,6 +22,12 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Upload config
+UPLOAD_FOLDER = os.path.join('datasets', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 
 # Global model objects
 models = {}
@@ -75,6 +84,13 @@ def load_and_process_data():
         purpose_counts = pd.Series(dtype=int)
     
     plot_analysis(hourly_trips, daily_trips, weekday_trips, monthly_trips, trip_durations, purpose_counts, df)
+
+    # Generate Data Warehouse charts
+    try:
+        warehouse.generate_warehouse_charts(df)
+        print("✅ Warehouse charts generated.")
+    except Exception as e:
+        print(f"⚠ Warehouse chart generation failed: {e}")
 
 @app.route('/')
 def home():
@@ -350,6 +366,15 @@ def app_main():
             except Exception as e:
                 flash(f"Error adding trip: {e}", "danger")
 
+    # Compute warehouse KPIs
+    warehouse_kpis = {}
+    try:
+        wdf = warehouse.prepare_warehouse_df(pd.read_csv(dataset_path)) if os.path.exists(dataset_path) else pd.DataFrame()
+        if not wdf.empty:
+            warehouse_kpis = warehouse.compute_warehouse_kpis(wdf)
+    except Exception as e:
+        print(f"Warehouse KPI error: {e}")
+
     return render_template('spa.html', 
                            user=current_user,
                            total_trips=total_trips,
@@ -372,6 +397,7 @@ def app_main():
                            predicted_stop=predicted_stop,
                            unique_starts=unique_starts,
                            active_tab=active_tab,
+                           wh=warehouse_kpis,
                            cache_id=int(datetime.now().timestamp()))
 
 @app.route('/dashboard')
@@ -388,6 +414,55 @@ def view_trips():
 @login_required
 def predict():
     return redirect(url_for('app_main'))
+
+@app.route('/api/warehouse')
+@login_required
+def api_warehouse():
+    """JSON endpoint for warehouse KPIs."""
+    dataset_path = 'datasets/UberDataset.csv'
+    if not os.path.exists(dataset_path):
+        return jsonify({'error': 'Dataset not found'}), 404
+    try:
+        df = pd.read_csv(dataset_path)
+        wdf = warehouse.prepare_warehouse_df(df)
+        kpis = warehouse.compute_warehouse_kpis(wdf)
+        return jsonify(kpis)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/agent/analyze', methods=['POST'])
+@login_required
+def api_agent_analyze():
+    """Upload CSV and run full AI agent analysis."""
+    if 'csv_file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['csv_file']
+    if file.filename == '' or not file.filename.lower().endswith('.csv'):
+        return jsonify({'error': 'Please upload a valid CSV file'}), 400
+
+    try:
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        results = ai_agent.analyze_csv(filepath)
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/agent/analyze-uber', methods=['POST'])
+@login_required
+def api_agent_analyze_uber():
+    """Run AI agent on the built-in Uber dataset."""
+    dataset_path = 'datasets/UberDataset.csv'
+    if not os.path.exists(dataset_path):
+        return jsonify({'error': 'Uber dataset not found'}), 404
+    try:
+        results = ai_agent.analyze_csv(dataset_path)
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
