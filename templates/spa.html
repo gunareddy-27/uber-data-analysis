@@ -52,12 +52,28 @@
             display: none;
         }
 
-        /* Hide scrollbar for IE, Edge and Firefox */
         .no-scrollbar {
             -ms-overflow-style: none;
             /* IE and Edge */
             scrollbar-width: none;
             /* Firefox */
+        }
+
+        /* --- PDF Print Styles for AI Agent Report --- */
+        @media print {
+            body { background: white !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .sidebar, .nav { display: none !important; }
+            main { margin: 0 !important; padding: 0 !important; overflow: visible !important; display: block !important; }
+            .section-view { display: none !important; }
+            #section-agent { display: block !important; overflow: visible !important; padding: 0 !important; position: absolute; left: 0; top: 0; width: 100%; height: auto !important; }
+            #agent-upload-area { display: none !important; }
+            #chatbot-toggle, #chatbot-window { display: none !important; }
+            #agent-download-pdf-btn { display: none !important; }
+            /* Force charts / iframes to print correctly */
+            iframe { page-break-inside: avoid; border: 1px solid #eee !important; box-shadow: none !important; }
+            .bg-white, .dark\:bg-gray-800, .bg-gradient-to-br { background: white !important; box-shadow: none !important; border: 1px solid #e5e7eb !important; page-break-inside: avoid; }
+            * { color: black !important; }
+            .text-indigo-600, .text-emerald-600, .text-rose-600 { filter: brightness(0.6); }
         }
     </style>
 </head>
@@ -995,7 +1011,10 @@
                     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">AI Data Analyst Agent</h1>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Upload any CSV — get auto-cleaning, visualizations, insights & trend predictions.</p>
                 </div>
-                <div class="flex space-x-3">
+                <div class="flex items-center space-x-3 text-right">
+                    <button id="agent-download-pdf-btn" onclick="window.print()" class="hidden px-4 py-2 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 text-white text-sm font-bold rounded-lg shadow transition">
+                        <i class="fas fa-file-pdf mr-1 text-red-400"></i> Download Report PDF
+                    </button>
                     <span class="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 animate-pulse">AI Powered</span>
                 </div>
             </div>
@@ -1053,10 +1072,16 @@
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                     <div class="flex items-center gap-3 mb-4">
                         <div class="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg"><i class="fas fa-broom text-emerald-600 dark:text-emerald-300 text-lg"></i></div>
-                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">Data Cleaning Report</h3>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">Data Cleaning & Feature Eng.</h3>
                     </div>
                     <div id="agent-cleaning" class="space-y-2"></div>
                 </div>
+
+                <!-- Smart Alerts -->
+                <div id="agent-smart-alerts" class="hidden mb-6"></div>
+
+                <!-- Executive Summary -->
+                <div id="agent-executive-summary" class="hidden mb-6"></div>
 
                 <!-- Summary Stats -->
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6" id="agent-summary-cards"></div>
@@ -1201,6 +1226,7 @@
             agentSessionId = data.session_id;
             agentShowLoading(false);
             document.getElementById('agent-results').classList.remove('hidden');
+            document.getElementById('agent-download-pdf-btn').classList.remove('hidden');
 
             // Cleaning report
             const cleanDiv = document.getElementById('agent-cleaning');
@@ -1217,6 +1243,51 @@
                 cardHTML('fa-exclamation-circle', 'Missing', s.missing_total.toLocaleString(), s.missing_total > 0 ? 'amber' : 'green'),
                 cardHTML('fa-hdd', 'Memory', s.memory_mb + ' MB', 'blue')
             ].join('');
+
+            // Smart Alerts
+            const alertsDiv = document.getElementById('agent-smart-alerts');
+            if (data.advanced_ml && data.advanced_ml.anomalies && data.advanced_ml.anomalies.percentage > 1.5) {
+                alertsDiv.classList.remove('hidden');
+                alertsDiv.innerHTML = `
+                    <div class="bg-gradient-to-r from-rose-500 to-red-600 text-white p-4 rounded-2xl shadow-lg border border-rose-400 flex items-center justify-between" style="animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm"><i class="fas fa-exclamation-triangle text-2xl"></i></div>
+                            <div>
+                                <h4 class="font-bold text-lg mb-0.5">Smart Alert System</h4>
+                                <p class="text-sm text-white/90">Critical Insight: Detected a remarkably high outlier rate (${data.advanced_ml.anomalies.percentage}% of dataset). Proceed to Review.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                alertsDiv.classList.add('hidden');
+            }
+
+            // Executive Summary
+            const execDiv = document.getElementById('agent-executive-summary');
+            if (data.executive_summary) {
+                execDiv.classList.remove('hidden');
+                execDiv.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-indigo-50 dark:bg-indigo-900/30 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-800 shadow-sm relative overflow-hidden group">
+                            <div class="absolute -right-4 -top-4 opacity-5 transition-transform group-hover:scale-110"><i class="fas fa-briefcase text-[8rem]"></i></div>
+                            <h3 class="text-indigo-800 dark:text-indigo-300 font-bold mb-3 flex items-center gap-2">
+                                <i class="fas fa-chart-line"></i> Business Analyst Summary
+                            </h3>
+                            <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">${data.executive_summary.business}</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group">
+                            <div class="absolute -right-4 -top-4 opacity-5 transition-transform group-hover:scale-110"><i class="fas fa-code text-[8rem]"></i></div>
+                            <h3 class="text-slate-800 dark:text-slate-300 font-bold mb-3 flex items-center gap-2">
+                                <i class="fas fa-cogs"></i> Technical ML Summary
+                            </h3>
+                            <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">${data.executive_summary.technical}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                execDiv.classList.add('hidden');
+            }
 
             // Advanced ML
             if (data.advanced_ml && Object.keys(data.advanced_ml).length > 0) {

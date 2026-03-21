@@ -11,7 +11,7 @@ from plotly.subplots import make_subplots
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.cluster import KMeans
-from sklearn.ensemble import IsolationForest, RandomForestRegressor, RandomForestClassifier
+from sklearn.ensemble import IsolationForest, RandomForestRegressor, RandomForestClassifier, GradientBoostingRegressor
 from sklearn.decomposition import PCA
 import os
 import json
@@ -45,7 +45,7 @@ def clean_data(df):
         df = df.drop_duplicates()
         report.append(f"Removed {dup_count} duplicate rows.")
 
-    # Auto-detect and convert date columns
+    # Auto-detect and convert date columns AND Automated Feature Engineering
     for col in df.columns:
         if df[col].dtype == 'object':
             try:
@@ -53,6 +53,13 @@ def clean_data(df):
                 if parsed.notna().sum() > len(df) * 0.5:
                     df[col] = parsed
                     report.append(f"Converted '{col}' to datetime.")
+                    
+                    # Automated Feature Engineering (XAI / Time series preparation)
+                    df[f'{col}_Year'] = df[col].dt.year
+                    df[f'{col}_Month'] = df[col].dt.month
+                    df[f'{col}_DayOfWeek'] = df[col].dt.dayofweek
+                    df[f'{col}_IsWeekend'] = df[f'{col}_DayOfWeek'].isin([5, 6]).astype(int)
+                    report.append(f"Auto-engineered time-series features (Year, Month, DayOfWeek, IsWeekend) from '{col}'.")
             except Exception:
                 pass
 
@@ -580,26 +587,56 @@ def compute_advanced_ml(df, session_id):
         fig.write_html(os.path.join(chart_dir, fname))
         results['cluster_chart'] = {'file': fname, 'title': 'Machine Learning: Segment Analysis', 'type': 'pca_cluster'}
         
-        # 3. Simple Feature Importance (Predicting the last numeric column using others)
+        # 3. Auto Model Selection & XAI (Predicting the last numeric column using others)
         if len(numeric_cols) >= 3:
             target_col = numeric_cols[-1]
             features = numeric_cols[:-1]
             
-            X_rf = X[features]
-            y_rf = X[target_col]
+            X_ml = X[features]
+            y_ml = X[target_col]
             
-            rf = RandomForestRegressor(n_estimators=50, random_state=42)
-            rf.fit(X_rf, y_rf)
+            # True AutoML: Compare multiple models
+            models = {
+                'Gradient Boosting': GradientBoostingRegressor(n_estimators=50, random_state=42),
+                'Random Forest': RandomForestRegressor(n_estimators=50, random_state=42),
+                'Linear Regression': LinearRegression()
+            }
             
-            importances = rf.feature_importances_
+            best_model_name = None
+            best_model = None
+            best_score = -float('inf')
+            
+            for name, model in models.items():
+                model.fit(X_ml, y_ml)
+                score = model.score(X_ml, y_ml)
+                if score > best_score:
+                    best_score = score
+                    best_model_name = name
+                    best_model = model
+            
+            # Explainable AI (XAI) using Extracted Importances
+            if hasattr(best_model, 'feature_importances_'):
+                importances = best_model.feature_importances_
+            else:
+                importances = np.abs(best_model.coef_)
+                if sum(importances) > 0:
+                    importances = importances / sum(importances)
+                    
             feat_imp = sorted(zip(features, importances), key=lambda x: x[1], reverse=True)[:5]
             
-            results['feature_importance'] = {
-                'target': target_col,
-                'importance': [{'feature': f, 'score': round(s, 3)} for f, s in feat_imp],
-                'text': f"Ran a Random Forest to predict **{target_col}**. " + 
-                        f"The most important predictor is **{feat_imp[0][0]}** (Importance: {feat_imp[0][1]:.2f})."
-            }
+            if feat_imp:
+                top_feat = feat_imp[0][0]
+                top_score = feat_imp[0][1]
+                
+                results['feature_importance'] = {
+                    'target': target_col,
+                    'model_used': best_model_name,
+                    'r2_score': round(best_score, 3),
+                    'importance': [{'feature': f, 'score': f"{round(s * 100, 1)}%"} for f, s in feat_imp],
+                    'text': f"Ran **True AutoML** (Random Forest, Gradient Boosting, Linear Regression) to predict **{target_col}**. " + 
+                            f"The winning algorithm was **{best_model_name}** (Accuracy: {best_score:.2f}). " +
+                            f"**Explainable AI Insights:** **{top_feat}** determines {top_score*100:.1f}% of the outcome."
+                }
             
     except Exception as e:
         print(f"Advanced ML failed: {e}")
@@ -660,6 +697,25 @@ def analyze_csv(filepath):
     advanced_ml = compute_advanced_ml(df_clean, session_id)
     if advanced_ml and 'cluster_chart' in advanced_ml and advanced_ml['cluster_chart']:
         charts.append(advanced_ml['cluster_chart'])
+        
+    # AI Executive Summary Generator
+    is_good = quality_score > 70
+    biz_text = f"The dataset contains {len(df_clean):,} records. Overall data quality is {'excellent' if is_good else 'poor'} (Score: {quality_score}/100). "
+    if advanced_ml and advanced_ml.get('feature_importance'):
+        biz_text += f"Key driver analysis reveals that {advanced_ml['feature_importance']['importance'][0]['feature']} is the primary factor influencing {advanced_ml['feature_importance']['target']}. "
+    if advanced_ml and advanced_ml.get('anomalies'):
+        biz_text += f"We detected {advanced_ml['anomalies']['count']} anomalous data points requiring manual review."
+        
+    tech_text = f"Processed {len(df_clean)}x{len(df_clean.columns)} matrix. Imputed {summary['missing_total']} missing values. "
+    if advanced_ml and advanced_ml.get('feature_importance'):
+        tech_text += f"AutoML selected {advanced_ml['feature_importance']['model_used']} (R²={advanced_ml['feature_importance']['r2_score']}). "
+    if advanced_ml and advanced_ml.get('anomalies'):
+        tech_text += f"Isolation Forest detected {advanced_ml['anomalies']['percentage']}% outliers. PCA+KMeans dimensionality reduction generated segments."
+
+    executive_summary = {
+        'business': biz_text,
+        'technical': tech_text
+    }
 
     return {
         'session_id': session_id,
@@ -668,6 +724,7 @@ def analyze_csv(filepath):
         'insights': insights,
         'charts': charts,
         'predictions': predictions,
-        'advanced_ml': advanced_ml
+        'advanced_ml': advanced_ml,
+        'executive_summary': executive_summary
     }
 
