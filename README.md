@@ -21,11 +21,16 @@ Upload any CSV (max 50MB) and let the autonomous AI agent to completely analyze 
 - **Trend Predictions:** Harnesses Linear Regressions to analyze directional trends over time and forecast a 30-day projection.
 - **PDF Export:** Click **"Download Report PDF"** for a fully formatted, print-ready document of the agent's findings.
 
-**Advanced ML Capabilities within the Agent:**
+**Advanced ML & Startup-Grade Capabilities within the Agent:**
+- **Context-Aware AI (Industry Detection):** Automatically scans column headers to classify the data's domain (e.g., Finance, Retail, Healthcare) and dynamically tailors its business recommendations and KPIs.
+- **Autonomous Hypothesis Engine:** Generates and runs raw statistical algorithms (Welch’s T-Tests) across categorical brackets to autonomously prove or disprove correlations with strict P-Value significance.
+- **Conversational Data Agent:** Includes an onboard AI Chatbot that memorizes the generated dataset payload in the window, allowing users to ask specific natural language questions about their generated statistics, anomalies, and forecasts.
+- **True Auto-ML Model Selection:** Evaluates multiple predictive algorithms (Random Forest, Gradient Boosting, Linear Regressions), calculates R-Squared arrays, and automatically picks the most performant model to predict your primary target column.
+- **Explainable AI (XAI):** Uses programmatic data extraction similar to SHAP to extract the structural weights of your Top 5 ML features and explain *exactly* what percentage they influence the model's decision-making.
+- **Smart Alert System:** Hardcoded thresholds immediately pulse animated UI banners if the unsupervised `IsolationForest` detects a critical volume of high-dimensional dataset outliers mapping outside normal bounds.
 - **Data Quality Scoring:** Algorithmically scores the dataset (out of 100) based on duplicates, missing values, and skewness penalties.
-- **Isolation Forest Anomaly Detection:** Statistically detects and isolates high-dimensional outliers within the data.
 - **PCA + K-Means Segmentation:** Compresses datasets into a 2D PCA space and automatically detects natural groupings (clusters).
-- **Random Forest Auto-ML:** Selects a target variable and trains a Random Forest model on the fly to determine the Top 5 most important predictive features.
+- **Executive Summary Generator:** Parses numeric algorithms and generates a strictly framed Business Analyst narrative and Technical ML execution summary.
 
 ### 2. 🏢 Ride-Sharing Data Warehouse (Uber Specific)
 A dedicated module for analyzing Uber/Ride-sharing logistics:
@@ -50,7 +55,7 @@ Predictive Machine Learning models explicitly trained on your ride data:
 
 ### Backend (Python)
 - `app.py` — The core Flask backend. Handles application routing, file uploads, API endpoints (`/api/warehouse`, `/api/agent/analyze`), user authentication, and orchestrates the ML models.
-- `ai_agent.py` — Contains the state-of-the-art Auto Insights pipeline. Handles dataset cleaning, Plotly auto-generation, ML models (`IsolationForest`, `PCA`, `KMeans`, `RandomForestRegressor`), and JSON payload packaging for the frontend.
+- `ai_agent.py` — Contains the state-of-the-art Auto Insights pipeline. Handles dataset cleaning, AutoML iteration (`GradientBoosting`, `RandomForest`, `LinearRegression`), `IsolationForest`, `PCA`/`KMeans`, autonomous `scipy` Hypothesis testing, and JSON payload packaging for the frontend.
 - `warehouse.py` — The Ride-Sharing Data Warehousing layer. Processes Uber data, estimates simulated base fares, calculates surge modifiers, and renders specialized Plotly HTML figures.
 - `predictor.py` — The centralized training module. Prepares data, trains, and serializes the 5 foundational AI Predictor models to memory whenever new data is added.
 - `visualization.py` & `analysis.py` — Core statistical libraries for plotting fundamental hourly, daily, and monthly trip frequencies inside the main Dashboard.
