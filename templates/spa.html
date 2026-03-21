@@ -1059,7 +1059,20 @@
                 </div>
 
                 <!-- Summary Stats -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="agent-summary-cards"></div>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6" id="agent-summary-cards"></div>
+
+                <!-- Advanced ML -->
+                <div id="agent-advanced-ml" class="hidden bg-gradient-to-br from-gray-900 to-indigo-900 dark:from-gray-950 dark:to-indigo-950 p-6 rounded-2xl shadow-lg border border-indigo-500/30 mb-6 text-white relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 p-4 opacity-10 blur-sm pointer-events-none transform rotate-12"><i class="fas fa-brain text-[15rem]"></i></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="p-2 bg-indigo-500/20 rounded-lg"><i class="fas fa-microchip text-indigo-400 text-lg"></i></div>
+                            <h3 class="text-xl font-bold">Advanced Machine Learning Analysis</h3>
+                            <span class="px-2 py-0.5 bg-fuchsia-500/20 text-fuchsia-300 text-xs font-bold rounded border border-fuchsia-500/30">DEEP SCAN</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="agent-advanced-content"></div>
+                    </div>
+                </div>
 
                 <!-- Insights -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
@@ -1198,11 +1211,54 @@
             // Summary cards
             const s = data.summary;
             document.getElementById('agent-summary-cards').innerHTML = [
+                cardHTML('fa-star', 'Quality Score', (s.quality_score ?? 'N/A') + '/100', s.quality_score > 80 ? 'emerald' : s.quality_score > 50 ? 'amber' : 'red'),
                 cardHTML('fa-database', 'Rows', s.rows.toLocaleString(), 'indigo'),
                 cardHTML('fa-columns', 'Columns', s.cols, 'purple'),
                 cardHTML('fa-exclamation-circle', 'Missing', s.missing_total.toLocaleString(), s.missing_total > 0 ? 'amber' : 'green'),
                 cardHTML('fa-hdd', 'Memory', s.memory_mb + ' MB', 'blue')
             ].join('');
+
+            // Advanced ML
+            if (data.advanced_ml && Object.keys(data.advanced_ml).length > 0) {
+                document.getElementById('agent-advanced-ml').classList.remove('hidden');
+                let amlHTML = '';
+                
+                // Quality Metrics
+                if (s.quality_metrics && s.quality_metrics.length > 0) {
+                    amlHTML += `<div class="bg-black/20 p-4 rounded-xl border border-white/10 shadow-inner">
+                        <h4 class="font-bold text-indigo-300 mb-2 flex items-center gap-2"><i class="fas fa-check-double"></i>Quality Assessment</h4>
+                        <ul class="text-sm space-y-1 text-gray-300">
+                            ${s.quality_metrics.map(m => `<li>• ${m}</li>`).join('')}
+                        </ul>
+                    </div>`;
+                }
+
+                // Anomalies
+                if (data.advanced_ml.anomalies && data.advanced_ml.anomalies.text) {
+                    const an = data.advanced_ml.anomalies;
+                    amlHTML += `<div class="bg-black/20 p-4 rounded-xl border border-white/10 shadow-inner">
+                        <h4 class="font-bold text-rose-400 mb-2 flex items-center gap-2"><i class="fas fa-radiation"></i>Anomaly Detection (Isolation Forest)</h4>
+                        <p class="text-sm text-gray-300 mb-2 leading-relaxed">${an.text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')}</p>
+                        <div class="w-full bg-gray-800 rounded-full h-1.5 mt-3"><div class="bg-rose-500 h-1.5 rounded-full" style="width: ${Math.min(100, an.percentage)}%"></div></div>
+                    </div>`;
+                }
+
+                // Feature Importance
+                if (data.advanced_ml.feature_importance && data.advanced_ml.feature_importance.text) {
+                    const fi = data.advanced_ml.feature_importance;
+                    amlHTML += `<div class="bg-black/20 p-4 rounded-xl border border-white/10 shadow-inner md:col-span-2">
+                        <h4 class="font-bold text-emerald-400 mb-2 flex items-center gap-2"><i class="fas fa-project-diagram"></i>Auto-ML Predictor (Random Forest)</h4>
+                        <p class="text-sm text-gray-300 mb-3 leading-relaxed">${fi.text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')}</p>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            ${fi.importance.map(i => `<span class="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-gray-300 shadow-sm transition hover:bg-white/10">${i.feature}: <span class="text-emerald-400 font-bold ml-1">${i.score}</span></span>`).join('')}
+                        </div>
+                    </div>`;
+                }
+                
+                document.getElementById('agent-advanced-content').innerHTML = amlHTML;
+            } else {
+                document.getElementById('agent-advanced-ml').classList.add('hidden');
+            }
 
             // Insights
             const insDiv = document.getElementById('agent-insights');

@@ -11,6 +11,8 @@ from plotly.subplots import make_subplots
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.cluster import KMeans
+from sklearn.ensemble import IsolationForest, RandomForestRegressor, RandomForestClassifier
+from sklearn.decomposition import PCA
 import os
 import json
 import uuid
@@ -484,6 +486,129 @@ def predict_trends(df):
 
 
 # ──────────────────────────────────────────────
+# 4.5. ADVANCED ML (Anomalies & Clustering)
+# ──────────────────────────────────────────────
+
+def calculate_data_quality(df_clean, original_shape):
+    """Calculate a composite data quality score out of 100."""
+    score = 100
+    metrics = []
+    
+    # Missing values penalty
+    total_cells = original_shape[0] * original_shape[1]
+    missing_cells = df_clean.isna().sum().sum()
+    if missing_cells > 0:
+        penalty = min(30, (missing_cells / total_cells) * 100 * 2)
+        score -= penalty
+        metrics.append(f"Missing Values Penalty: -{penalty:.1f} pts")
+    else:
+        metrics.append("No Missing Values: +0 pts (Perfect)")
+
+    # Duplicates penalty
+    dup_ratio = df_clean.duplicated().sum() / len(df_clean)
+    if dup_ratio > 0:
+        penalty = min(20, dup_ratio * 100 * 1.5)
+        score -= penalty
+        metrics.append(f"Duplicate Row Penalty: -{penalty:.1f} pts")
+    
+    # Skewness penalty
+    numeric_cols = df_clean.select_dtypes(include=[np.number]).columns
+    high_skew_cols = sum(1 for c in numeric_cols if abs(df_clean[c].skew()) > 2)
+    if high_skew_cols > 0:
+        penalty = min(20, high_skew_cols * 2)
+        score -= penalty
+        metrics.append(f"High Skewness Penalty ({high_skew_cols} cols): -{penalty:.1f} pts")
+
+    return max(0, int(score)), metrics
+
+def compute_advanced_ml(df, session_id):
+    """Run Isolation Forest for anomaly detection and K-Means for clustering."""
+    chart_dir = f'static/agent_{session_id}'
+    os.makedirs(chart_dir, exist_ok=True)
+    
+    results = {'anomalies': [], 'cluster_chart': None, 'feature_importance': []}
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    if len(numeric_cols) < 2 or len(df) < 50:
+        return results
+        
+    try:
+        # Preprocessing
+        X = df[numeric_cols].fillna(df[numeric_cols].median())
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+
+        # 1. Anomaly Detection (Isolation Forest)
+        iso = IsolationForest(contamination=0.05, random_state=42)
+        outliers = iso.fit_predict(X_scaled)
+        anomaly_count = (outliers == -1).sum()
+        anomaly_pct = (anomaly_count / len(df)) * 100
+        
+        results['anomalies'] = {
+            'count': int(anomaly_count),
+            'percentage': round(anomaly_pct, 2),
+            'text': f"Detected **{anomaly_count} anomalous rows** ({anomaly_pct:.1f}% of data) using Isolation Forest. These rows deviate significantly from the rest of the dataset."
+        }
+        
+        # 2. Advanced Clustering with PCA visualization
+        pca = PCA(n_components=2)
+        X_pca = pca.fit_transform(X_scaled)
+        
+        # Auto-determine K using a simple heuristic (between 2 and 5)
+        k = min(5, max(2, len(df) // 100))
+        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+        clusters = kmeans.fit_predict(X_scaled)
+        
+        df_plot = pd.DataFrame({
+            'PCA1': X_pca[:, 0],
+            'PCA2': X_pca[:, 1],
+            'Cluster': [f"Group {c+1}" for c in clusters],
+            'Is_Anomaly': ['Anomaly' if o == -1 else 'Normal' for o in outliers]
+        })
+        
+        # Add tooltips if possible
+        for i, col in enumerate(numeric_cols[:3]):
+            df_plot[col] = df[col].values
+            
+        fig = px.scatter(df_plot, x='PCA1', y='PCA2', color='Cluster', symbol='Is_Anomaly',
+                         title=f'Auto-Detected Segments (K={k}) & Anomalies via PCA',
+                         hover_data=numeric_cols[:3],
+                         template='plotly_white',
+                         color_discrete_sequence=px.colors.qualitative.Bold)
+        
+        fname = 'advanced_clustering_pca.html'
+        fig.write_html(os.path.join(chart_dir, fname))
+        results['cluster_chart'] = {'file': fname, 'title': 'Machine Learning: Segment Analysis', 'type': 'pca_cluster'}
+        
+        # 3. Simple Feature Importance (Predicting the last numeric column using others)
+        if len(numeric_cols) >= 3:
+            target_col = numeric_cols[-1]
+            features = numeric_cols[:-1]
+            
+            X_rf = X[features]
+            y_rf = X[target_col]
+            
+            rf = RandomForestRegressor(n_estimators=50, random_state=42)
+            rf.fit(X_rf, y_rf)
+            
+            importances = rf.feature_importances_
+            feat_imp = sorted(zip(features, importances), key=lambda x: x[1], reverse=True)[:5]
+            
+            results['feature_importance'] = {
+                'target': target_col,
+                'importance': [{'feature': f, 'score': round(s, 3)} for f, s in feat_imp],
+                'text': f"Ran a Random Forest to predict **{target_col}**. " + 
+                        f"The most important predictor is **{feat_imp[0][0]}** (Importance: {feat_imp[0][1]:.2f})."
+            }
+            
+    except Exception as e:
+        print(f"Advanced ML failed: {e}")
+        pass
+        
+    return results
+
+
+# ──────────────────────────────────────────────
 # 5. FULL ANALYSIS PIPELINE
 # ──────────────────────────────────────────────
 
@@ -506,6 +631,9 @@ def analyze_csv(filepath):
     # Clean
     df_clean, cleaning_report = clean_data(df)
 
+    # Calculate Data Quality
+    quality_score, quality_metrics = calculate_data_quality(df_clean, df.shape)
+
     # Summary stats
     summary = {
         'rows': len(df_clean),
@@ -514,7 +642,9 @@ def analyze_csv(filepath):
         'dtypes': {col: str(df_clean[col].dtype) for col in df_clean.columns},
         'missing_total': int(df_clean.isna().sum().sum()),
         'memory_mb': round(df_clean.memory_usage(deep=True).sum() / 1024 / 1024, 2),
-        'preview': df_clean.head(10).to_dict(orient='records')
+        'preview': df_clean.head(10).to_dict(orient='records'),
+        'quality_score': quality_score,
+        'quality_metrics': quality_metrics
     }
 
     # Insights
@@ -525,6 +655,11 @@ def analyze_csv(filepath):
 
     # Trends
     predictions = predict_trends(df_clean)
+    
+    # Advanced ML (Anomalies & Clusters)
+    advanced_ml = compute_advanced_ml(df_clean, session_id)
+    if advanced_ml and 'cluster_chart' in advanced_ml and advanced_ml['cluster_chart']:
+        charts.append(advanced_ml['cluster_chart'])
 
     return {
         'session_id': session_id,
@@ -532,5 +667,7 @@ def analyze_csv(filepath):
         'cleaning_report': cleaning_report,
         'insights': insights,
         'charts': charts,
-        'predictions': predictions
+        'predictions': predictions,
+        'advanced_ml': advanced_ml
     }
+
