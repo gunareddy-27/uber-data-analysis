@@ -436,30 +436,71 @@ def api_agent_analyze():
     """Upload CSV and run full AI agent analysis."""
     if 'csv_file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
-
     file = request.files['csv_file']
     if file.filename == '' or not file.filename.lower().endswith('.csv'):
         return jsonify({'error': 'Please upload a valid CSV file'}), 400
-
     try:
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-
         results = ai_agent.analyze_csv(filepath)
         return jsonify(results)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/agent/autonomous-cycle', methods=['POST'])
+@login_required
+def api_agent_autonomous():
+    """[ULTIMATE FEATURE] Run Full AI Cycle."""
+    try:
+        agent = ai_agent.UberAutonomousAgent()
+        results = agent.run_full_autonomous_cycle()
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/agent/alerts', methods=['GET'])
+@login_required
+def api_agent_alerts():
+    """Fetch latest alerts from the autonomous metadata."""
+    from pathlib import Path
+    import json
+    latest_run = next(Path('logs').glob('agent_*_metadata.json'), None)
+    if latest_run:
+        with open(latest_run, 'r') as f:
+            metadata = json.load(f)
+            return jsonify(metadata.get('alerts', []))
+    return jsonify([{"title": "System Active", "message": "Agent is scanning...", "type": "info", "id": "alert_0"}])
+
+@app.route('/api/agent/simulation', methods=['POST'])
+@login_required
+def api_agent_simulation():
+    """Run business scenario simulations."""
+    try:
+        agent = ai_agent.UberAutonomousAgent()
+        scenarios = agent.simulate_business_scenarios(pd.read_csv('datasets/UberDataset.csv'))
+        return jsonify(scenarios)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/agent/feedback', methods=['POST'])
+@login_required
+def api_agent_feedback():
+    """Record user feedback for the learning loop."""
+    from pathlib import Path
+    import json
+    data = request.json
+    log_file = Path('logs/agent_feedback_loop.jsonl')
+    with open(log_file, 'a') as f:
+        f.write(json.dumps({"timestamp": datetime.now().isoformat(), "insight": data.get('insight_text'), "rating": data.get('rating')}) + "\n")
+    return jsonify({"status": "success"})
+
 @app.route('/api/agent/analyze-uber', methods=['POST'])
 @login_required
 def api_agent_analyze_uber():
     """Run AI agent on the built-in Uber dataset."""
-    dataset_path = 'datasets/UberDataset.csv'
-    if not os.path.exists(dataset_path):
-        return jsonify({'error': 'Uber dataset not found'}), 404
     try:
-        results = ai_agent.analyze_csv(dataset_path)
+        results = ai_agent.analyze_csv('datasets/UberDataset.csv')
         return jsonify(results)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -536,6 +577,7 @@ def initialize_app():
                  models['stop_encoder'],
                  models['loc_cat_encoder'],
                  models['loc_purp_encoder']) = predictor.train_location_model(df_pred)
+
 
 if __name__ == '__main__':
     with app.app_context():

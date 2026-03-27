@@ -182,9 +182,39 @@
                     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Real-time overview of your trip data.</p>
                 </div>
-                <div class="flex space-x-3">
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Live
-                        Data</span>
+                <div class="flex items-center space-x-4">
+                    <!-- Smart Notification Bell -->
+                    <div class="relative group">
+                        <button onclick="toggleAlertPanel()" class="p-3 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all relative">
+                            <i class="fas fa-bell text-xl"></i>
+                            <span id="alert-badge" class="hidden absolute top-2 right-2 flex h-3 w-3">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                            </span>
+                        </button>
+                        
+                        <!-- Alert Dropdown -->
+                        <div id="alert-panel" class="hidden absolute right-0 mt-4 w-96 bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl border border-gray-100 dark:border-gray-800 z-[100] overflow-hidden">
+                            <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                                <h3 class="font-black text-gray-800 dark:text-gray-200 uppercase tracking-tighter">System Intelligence Alerts</h3>
+                                <span class="bg-indigo-500/10 text-indigo-600 text-[10px] font-black px-2 py-1 rounded-full border border-indigo-500/20">AGENT LIVE</span>
+                            </div>
+                            <div id="alert-list" class="max-h-[400px] overflow-y-auto p-4 space-y-3">
+                                <p class="text-center text-xs text-gray-400 py-8">No active security or demand alerts.</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 dark:bg-gray-800/50 text-center">
+                                <button onclick="agentRunAutonomousCycle()" class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:underline">Re-Sync All Agents</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <span class="px-4 py-2 rounded-2xl text-xs font-black bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-2">
+                        <span class="flex h-2 w-2 relative">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        DATA SYNCHRONIZED
+                    </span>
                 </div>
             </div>
 
@@ -1019,81 +1049,108 @@
                 </div>
             </div>
 
-            <!-- No-Code AI Workflow Builder (Draggable Simulation) -->
-            <div class="mb-8 border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-3xl p-6 shadow-inner relative overflow-hidden group">
-                <div class="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-110 transition-transform duration-700 pointer-events-none text-indigo-900"><i class="fas fa-project-diagram text-[12rem]"></i></div>
-                <div class="relative z-10">
-                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-pink-100 dark:bg-pink-900/40 rounded-lg"><i class="fas fa-layer-group text-pink-600 dark:text-pink-400 text-lg"></i></div>
+            <!-- Autonomous Mode Control & Pipeline -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Main Control -->
+                <div class="lg:col-span-2 bg-gradient-to-br from-indigo-900 via-slate-900 to-black p-8 rounded-3xl shadow-2xl border border-indigo-500/30 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+                        <i class="fas fa-brain text-[12rem] text-indigo-400"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="p-3 bg-indigo-500/20 rounded-2xl border border-indigo-400/30 shadow-inner">
+                                <i class="fas fa-microchip text-2xl text-indigo-400 animate-pulse"></i>
+                            </div>
                             <div>
-                                <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">Workflow Automation Builder</h3>
-                                <p class="text-xs text-gray-500 mt-0.5">Drag-and-Drop Pipeline Configuration</p>
+                                <h2 class="text-2xl font-black text-white tracking-tight">Autonomous Command Center</h2>
+                                <p class="text-indigo-300/80 text-sm font-medium">Multi-Agent Orchestration & Continuous Learning</p>
                             </div>
                         </div>
-                        <span class="px-3 py-1 bg-pink-500/10 text-pink-600 dark:text-pink-400 text-xs font-bold rounded-full border border-pink-500/20 shadow-sm flex items-center gap-2"><i class="fas fa-lock"></i> NO-CODE AI RUNTIME</span>
-                    </div>
-                    
-                    <div class="flex flex-col md:flex-row items-center justify-between gap-3 w-full p-4 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-600">
-                        <!-- Step 1 -->
-                        <div class="flex-1 w-full bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative text-center group-hover:border-indigo-400 transition-colors cursor-grab">
-                            <i class="fas fa-file-csv text-2xl text-indigo-500 mb-2"></i>
-                            <h4 class="font-bold text-gray-700 dark:text-gray-300 text-sm">1. Target Dataset Ingestion</h4>
-                        </div>
-                        <i class="fas fa-chevron-right text-gray-300 dark:text-gray-600 rotate-90 md:rotate-0"></i>
                         
-                        <!-- Step 2 -->
-                        <div class="flex-1 w-full bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm text-center group-hover:border-emerald-400 transition-colors cursor-grab delay-75">
-                            <i class="fas fa-broom text-2xl text-emerald-500 mb-2"></i>
-                            <h4 class="font-bold text-gray-700 dark:text-gray-300 text-sm">2. Autonomous Data Cleansing</h4>
+                        <div class="flex flex-wrap gap-4 mb-8">
+                            <button onclick="agentRunAutonomousCycle()" 
+                                class="flex-1 min-w-[200px] flex items-center justify-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] group/btn relative overflow-hidden">
+                                <span class="relative z-10 flex items-center gap-2">
+                                    <i class="fas fa-play-circle text-xl"></i>
+                                    RESYNC & RUN FULL AUTONOMOUS CYCLE
+                                </span>
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
+                            </button>
+                            <button onclick="agentAnalyzeUber()"
+                                class="flex-1 min-w-[200px] flex items-center justify-center gap-3 px-8 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-2xl border border-slate-700 transition-all">
+                                <i class="fas fa-history text-xl"></i>
+                                RE-ANALYZE LATEST UBER DATA
+                            </button>
                         </div>
-                        <i class="fas fa-chevron-right text-gray-300 dark:text-gray-600 rotate-90 md:rotate-0"></i>
-                        
-                        <!-- Step 3 -->
-                        <div class="flex-1 w-full bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm text-center group-hover:border-purple-400 transition-colors cursor-grab delay-150">
-                            <i class="fas fa-robot text-2xl text-purple-500 mb-2"></i>
-                            <h4 class="font-bold text-gray-700 dark:text-gray-300 text-sm">3. AutoML & Hypothesis Test</h4>
-                        </div>
-                        <i class="fas fa-chevron-right text-gray-300 dark:text-gray-600 rotate-90 md:rotate-0"></i>
-                        
-                        <!-- Step 4 -->
-                        <div class="flex-1 w-full bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm text-center group-hover:border-rose-400 transition-colors cursor-grab delay-200">
-                            <i class="fas fa-file-contract text-2xl text-rose-500 mb-2"></i>
-                            <h4 class="font-bold text-gray-700 dark:text-gray-300 text-sm">4. Compile Knowledge Graph</h4>
+
+                        <!-- Pipeline Progress Area -->
+                        <div id="autonomous-pipeline-ui" class="hidden">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-xs font-black text-indigo-400 tracking-widest uppercase">System Pipeline Activity</span>
+                                <span id="pipeline-status-text" class="text-xs text-slate-400 italic">Initializing Sub-Agents...</span>
+                            </div>
+                            <div class="flex items-center gap-2 h-2 w-full bg-slate-800 rounded-full overflow-hidden mb-6">
+                                <div id="pipeline-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 w-0 transition-all duration-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div>
+                            </div>
+                            <div class="grid grid-cols-4 gap-4 text-center">
+                                <div id="pipeline-step-1" class="opacity-30 transition-opacity"><i class="fas fa-broom text-indigo-400 mb-1"></i><p class="text-[10px] text-slate-500 font-bold">CLEAN</p></div>
+                                <div id="pipeline-step-2" class="opacity-30 transition-opacity"><i class="fas fa-robot text-purple-400 mb-1"></i><p class="text-[10px] text-slate-500 font-bold">AUTOML</p></div>
+                                <div id="pipeline-step-3" class="opacity-30 transition-opacity"><i class="fas fa-shield-alt text-emerald-400 mb-1"></i><p class="text-[10px] text-slate-500 font-bold">SECURITY</p></div>
+                                <div id="pipeline-step-4" class="opacity-30 transition-opacity"><i class="fas fa-file-invoice text-rose-400 mb-1"></i><p class="text-[10px] text-slate-500 font-bold">REPORT</p></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Upload Area -->
-            <div id="agent-upload-area" class="mb-8">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Drag & Drop -->
-                    <div id="agent-dropzone" class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-10 text-center hover:border-indigo-500 dark:hover:border-indigo-400 transition-all cursor-pointer bg-white dark:bg-gray-800 group">
-                        <input type="file" id="agent-file-input" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                        <div class="flex flex-col items-center">
-                            <div class="p-5 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                                <i class="fas fa-cloud-upload-alt text-4xl text-indigo-600 dark:text-indigo-300"></i>
+                <!-- Learning & Model Stats -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 transition-colors flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-bold text-gray-800 dark:text-gray-200">Intelligence Engine</h3>
+                            <span class="px-2 py-1 bg-emerald-500/10 text-emerald-600 text-[10px] font-black rounded-full border border-emerald-500/20">LIVE OPTIMIZED</span>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">Model Freshness</span>
+                                <span class="text-sm font-bold text-indigo-600">99.8%</span>
                             </div>
-                            <p class="text-lg font-bold text-gray-700 dark:text-gray-200 mb-1">Drop your CSV here</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">or click to browse • Max 50MB</p>
-                            <p id="agent-file-name" class="mt-3 text-sm font-medium text-indigo-600 dark:text-indigo-400 hidden"></p>
+                            <div class="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full w-[99%]"></div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">Self-Correction Rate</span>
+                                <span class="text-sm font-bold text-emerald-600">84.2%</span>
+                            </div>
+                            <div class="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-emerald-500 h-full w-[84%]"></div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">Autonomous Decisions</span>
+                                <span class="text-sm font-bold text-purple-600">1,248</span>
+                            </div>
                         </div>
                     </div>
+                    <button onclick="showSection('predict')" class="mt-6 w-full py-3 bg-gray-50 dark:bg-gray-900/50 text-gray-600 dark:text-gray-400 font-bold rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 transition-all text-xs">
+                        CONFIGURE PREDICTIVE AGENTS
+                    </button>
+                </div>
+            </div>
 
-                    <!-- Quick Actions -->
-                    <div class="flex flex-col gap-4">
+            <!-- Upload Area (Secondary for Advanced Users) -->
+            <div id="agent-upload-area" class="mb-8 hidden md:block">
+                <div class="bg-indigo-50/30 dark:bg-indigo-900/10 rounded-3xl p-6 border border-indigo-100 dark:border-indigo-800/50">
+                    <div class="flex flex-col md:flex-row items-center gap-6">
+                        <div id="agent-dropzone" class="flex-1 w-full relative border-2 border-dashed border-gray-300 dark:border-indigo-800/50 rounded-2xl p-6 text-center hover:border-indigo-500 transition-all cursor-pointer bg-white/50 dark:bg-gray-800/50">
+                            <input type="file" id="agent-file-input" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                            <div class="flex items-center justify-center gap-3">
+                                <i class="fas fa-cloud-upload-alt text-xl text-indigo-500"></i>
+                                <span class="text-sm font-bold text-gray-600 dark:text-gray-300" id="agent-file-name">Inject External Dataset (Optional)</span>
+                            </div>
+                        </div>
                         <button id="agent-analyze-btn" onclick="agentAnalyzeUpload()" disabled
-                            class="flex-1 flex items-center justify-center gap-3 px-6 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-2xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-lg">
-                            <i class="fas fa-magic text-xl"></i>
-                            Analyze Uploaded CSV
+                            class="px-8 py-3 bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-black rounded-2xl hover:bg-indigo-200 transition-all disabled:opacity-30 text-xs tracking-widest uppercase">
+                            EXECUTE ANALYST ON UPLOAD
                         </button>
-                        <button onclick="agentAnalyzeUber()"
-                            class="flex-1 flex items-center justify-center gap-3 px-6 py-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-2xl hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg text-lg">
-                            <i class="fas fa-taxi text-xl"></i>
-                            Analyze Uber Dataset
-                        </button>
-                        <p class="text-xs text-gray-400 dark:text-gray-500 text-center">The AI agent will auto-clean, generate charts, provide insights, and predict trends.</p>
                     </div>
                 </div>
             </div>
@@ -1291,195 +1348,305 @@
                 .catch(err => { agentShowLoading(false); alert('Analysis failed: ' + err.message); });
         }
 
+        function toggleAlertPanel() {
+            const panel = document.getElementById('alert-panel');
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                fetchAlerts();
+            }
+        }
+
+        function fetchAlerts() {
+            fetch('/api/agent/alerts')
+                .then(r => r.json())
+                .then(alerts => {
+                    const list = document.getElementById('alert-list');
+                    const badge = document.getElementById('alert-badge');
+                    
+                    if (alerts && alerts.length > 0) {
+                        badge.classList.remove('hidden');
+                        list.innerHTML = alerts.map(a => `
+                            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-indigo-400 transition-all cursor-pointer">
+                                <div class="flex items-start gap-4">
+                                    <div class="p-2 ${a.type==='critical'?'bg-rose-100 dark:bg-rose-900/30 text-rose-600':'bg-amber-100 dark:bg-amber-900/30 text-amber-600'} rounded-xl">
+                                        <i class="fas ${a.type==='critical'?'fa-radiation':'fa-exclamation-triangle'} text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-black text-gray-800 dark:text-gray-200 uppercase tracking-tighter">${a.title}</h4>
+                                        <p class="text-[11px] text-gray-500 mt-0.5 leading-relaxed font-medium">${a.message}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        badge.classList.add('hidden');
+                        list.innerHTML = '<p class="text-center text-xs text-gray-400 py-8">No active security or demand alerts.</p>';
+                    }
+                })
+                .catch(err => console.error('Alert Fetch Error:', err));
+        }
+
+        function submitAgentFeedback(text, rating) {
+            fetch('/api/agent/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ insight_text: text, rating: rating })
+            }).then(() => {
+                alert('Feedback recorded! The agent will use this to fine-tune future insights.');
+            });
+        }
+
+        // Initialize Alerts on load
+        fetchAlerts();
+
+        function agentRunAutonomousCycle() {
+            const pipelineUI = document.getElementById('autonomous-pipeline-ui');
+            const pgBar = document.getElementById('pipeline-progress-bar');
+            pipelineUI.classList.remove('hidden');
+            
+            let progress = 0;
+            const statusText = document.getElementById('pipeline-status-text');
+            const steps = [
+                { p: 25, t: 'Sub-Agent Cleaning Initiated...', s: 1 },
+                { p: 50, t: 'AutoML Feature Extraction...', s: 2 },
+                { p: 75, t: 'Anomaly & Security Scanning...', s: 3 },
+                { p: 100, t: 'Compiling Final Knowledge Report...', s: 4 }
+            ];
+
+            let stepIdx = 0;
+            const timer = setInterval(() => {
+                if (stepIdx < steps.length) {
+                    progress = steps[stepIdx].p;
+                    pgBar.style.width = progress + '%';
+                    statusText.textContent = steps[stepIdx].t;
+                    document.getElementById('pipeline-step-' + steps[stepIdx].s).style.opacity = '1';
+                    stepIdx++;
+                } else {
+                    clearInterval(timer);
+                }
+            }, 800);
+
+            fetch('/api/agent/autonomous-cycle', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+                    clearInterval(timer);
+                    pgBar.style.width = '100%';
+                    statusText.textContent = 'Analysis Complete.';
+                    agentRenderResults(data);
+                })
+                .catch(err => {
+                    clearInterval(timer);
+                    alert('Autonomous Cycle Failed: ' + err.message);
+                });
+        }
+
         function agentRenderResults(data) {
             window.lastAgentData = data;
-            window.agentCols = data.summary.columns.map(c => c.toLowerCase());
+            // Handle new autonomous report format
+            const aId = data.agent_id || data.session_id;
+            agentSessionId = aId;
             
-            agentSessionId = data.session_id;
             agentShowLoading(false);
             document.getElementById('agent-results').classList.remove('hidden');
             document.getElementById('agent-download-pdf-btn').classList.remove('hidden');
 
-            // Cleaning report
+            // 1. Cleaning report
             const cleanDiv = document.getElementById('agent-cleaning');
-            cleanDiv.innerHTML = data.cleaning_report.map(r =>
-                `<div class="flex items-start gap-2"><i class="fas fa-check-circle text-emerald-500 mt-0.5"></i><span class="text-sm text-gray-700 dark:text-gray-300">${r}</span></div>`
+            const cRep = data.cleaning_report || [];
+            cleanDiv.innerHTML = cRep.map(r =>
+                `<div class="flex items-start gap-2"><i class="fas fa-check-circle text-emerald-500 mt-0.5"></i><span class="text-sm text-gray-700 dark:text-gray-300 font-medium">${r}</span></div>`
             ).join('');
 
-            // Summary cards
+            // 2. Summary cards
             const s = data.summary;
             document.getElementById('agent-summary-cards').innerHTML = [
                 cardHTML('fa-star', 'Quality Score', (s.quality_score ?? 'N/A') + '/100', s.quality_score > 80 ? 'emerald' : s.quality_score > 50 ? 'amber' : 'red'),
-                cardHTML('fa-database', 'Rows', s.rows.toLocaleString(), 'indigo'),
-                cardHTML('fa-columns', 'Columns', s.cols, 'purple'),
-                cardHTML('fa-exclamation-circle', 'Missing', s.missing_total.toLocaleString(), s.missing_total > 0 ? 'amber' : 'green'),
-                cardHTML('fa-hdd', 'Memory', s.memory_mb + ' MB', 'blue')
+                cardHTML('fa-database', 'Total Rows', s.rows.toLocaleString(), 'indigo'),
+                cardHTML('fa-sync', 'Change Count', (data.change_report ? data.change_report.length : 0), 'blue'),
+                cardHTML('fa-exclamation-circle', 'Security Alerts', (data.alerts ? data.alerts.length : 0), (data.alerts && data.alerts.length > 0) ? 'red' : 'green'),
+                cardHTML('fa-flask', 'Hypotheses', (data.hypotheses ? data.hypotheses.length : 0), 'purple')
             ].join('');
 
-            // Smart Alerts
+            // 3. Smart Alerts (Autonomous)
             const alertsDiv = document.getElementById('agent-smart-alerts');
-            if (data.advanced_ml && data.advanced_ml.anomalies && data.advanced_ml.anomalies.percentage > 1.5) {
+            if (data.alerts && data.alerts.length > 0) {
                 alertsDiv.classList.remove('hidden');
-                alertsDiv.innerHTML = `
-                    <div class="bg-gradient-to-r from-rose-500 to-red-600 text-white p-4 rounded-2xl shadow-lg border border-rose-400 flex items-center justify-between" style="animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;">
+                alertsDiv.innerHTML = data.alerts.map(a => `
+                    <div class="bg-gradient-to-r ${a.type==='critical'?'from-rose-500 to-red-600':'from-amber-400 to-orange-500'} text-white p-5 rounded-3xl shadow-lg mb-3 flex items-center justify-between animate-pulse">
                         <div class="flex items-center gap-4">
-                            <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm"><i class="fas fa-exclamation-triangle text-2xl"></i></div>
+                            <div class="bg-white/20 p-3 rounded-xl backdrop-blur-sm"><i class="fas ${a.type==='critical'?'fa-radiation':'fa-exclamation-triangle'} text-2xl"></i></div>
                             <div>
-                                <h4 class="font-bold text-lg mb-0.5">Smart Alert System</h4>
-                                <p class="text-sm text-white/90">Critical Insight: Detected a remarkably high outlier rate (${data.advanced_ml.anomalies.percentage}% of dataset). Proceed to Review.</p>
+                                <h4 class="font-black text-lg mb-0.5 uppercase tracking-tight">${a.title}</h4>
+                                <p class="text-sm text-white/90 font-medium">${a.message}</p>
                             </div>
                         </div>
+                        <div class="text-right">
+                             <span class="text-[10px] font-black bg-black/20 px-2 py-1 rounded uppercase">${a.type}</span>
+                        </div>
                     </div>
-                `;
+                `).join('');
             } else {
                 alertsDiv.classList.add('hidden');
             }
 
-            // Executive Summary
+            // 4. Executive Summary
             const execDiv = document.getElementById('agent-executive-summary');
             if (data.executive_summary) {
                 execDiv.classList.remove('hidden');
                 execDiv.innerHTML = `
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-indigo-50 dark:bg-indigo-900/30 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-800 shadow-sm relative overflow-hidden group">
-                            <div class="absolute -right-4 -top-4 opacity-5 transition-transform group-hover:scale-110"><i class="fas fa-briefcase text-[8rem]"></i></div>
-                            <h3 class="text-indigo-800 dark:text-indigo-300 font-bold mb-3 flex items-center gap-2">
-                                <i class="fas fa-chart-line"></i> Business Analyst Summary
+                        <div class="bg-indigo-600 p-8 rounded-[2rem] shadow-xl relative overflow-hidden group">
+                            <div class="absolute -right-4 -top-4 opacity-10 transition-transform group-hover:scale-110"><i class="fas fa-briefcase text-[10rem] text-white"></i></div>
+                            <h3 class="text-white font-black text-xl mb-4 flex items-center gap-3">
+                                <i class="fas fa-chess-knight"></i> STRATEGIC BUSINESS INTELLIGENCE
                             </h3>
-                            <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">${data.executive_summary.business}</p>
+                            <p class="text-indigo-100 text-sm leading-relaxed font-medium mb-6">${data.executive_summary.business}</p>
+                            <div class="flex flex-wrap gap-2">
+                                ${(data.recommended_kpis || []).map(k => `<span class="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold text-white uppercase border border-white/20">${k}</span>`).join('')}
+                            </div>
                         </div>
-                        <div class="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group">
-                            <div class="absolute -right-4 -top-4 opacity-5 transition-transform group-hover:scale-110"><i class="fas fa-code text-[8rem]"></i></div>
-                            <h3 class="text-slate-800 dark:text-slate-300 font-bold mb-3 flex items-center gap-2">
-                                <i class="fas fa-cogs"></i> Technical ML Summary
+                        <div class="bg-slate-900 p-8 rounded-[2rem] shadow-xl border border-slate-800 relative overflow-hidden group">
+                            <div class="absolute -right-4 -top-4 opacity-10 transition-transform group-hover:scale-110"><i class="fas fa-code-branch text-[10rem] text-white"></i></div>
+                            <h3 class="text-white font-black text-xl mb-4 flex items-center gap-3">
+                                <i class="fas fa-terminal"></i> AUTONOMOUS PIPELINE REPORT
                             </h3>
-                            <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">${data.executive_summary.technical}</p>
+                            <p class="text-slate-400 text-sm leading-relaxed font-mono">${data.executive_summary.technical}</p>
                         </div>
                     </div>
                 `;
-            } else {
-                execDiv.classList.add('hidden');
             }
 
-            // Advanced ML
-            if (data.advanced_ml && Object.keys(data.advanced_ml).length > 0) {
-                document.getElementById('agent-advanced-ml').classList.remove('hidden');
-                let amlHTML = '';
-                
-                // Quality Metrics
-                if (s.quality_metrics && s.quality_metrics.length > 0) {
-                    amlHTML += `<div class="bg-black/20 p-4 rounded-xl border border-white/10 shadow-inner">
-                        <h4 class="font-bold text-indigo-300 mb-2 flex items-center gap-2"><i class="fas fa-check-double"></i>Quality Assessment</h4>
-                        <ul class="text-sm space-y-1 text-gray-300">
-                            ${s.quality_metrics.map(m => `<li>• ${m}</li>`).join('')}
-                        </ul>
-                    </div>`;
-                }
-
-                // Anomalies
-                if (data.advanced_ml.anomalies && data.advanced_ml.anomalies.text) {
-                    const an = data.advanced_ml.anomalies;
-                    amlHTML += `<div class="bg-black/20 p-4 rounded-xl border border-white/10 shadow-inner">
-                        <h4 class="font-bold text-rose-400 mb-2 flex items-center gap-2"><i class="fas fa-radiation"></i>Anomaly Detection (Isolation Forest)</h4>
-                        <p class="text-sm text-gray-300 mb-2 leading-relaxed">${an.text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')}</p>
-                        <div class="w-full bg-gray-800 rounded-full h-1.5 mt-3"><div class="bg-rose-500 h-1.5 rounded-full" style="width: ${Math.min(100, an.percentage)}%"></div></div>
-                    </div>`;
-                }
-
-                // Feature Importance
-                if (data.advanced_ml.feature_importance && data.advanced_ml.feature_importance.text) {
-                    const fi = data.advanced_ml.feature_importance;
-                    amlHTML += `<div class="bg-black/20 p-4 rounded-xl border border-white/10 shadow-inner md:col-span-2">
-                        <h4 class="font-bold text-emerald-400 mb-2 flex items-center gap-2"><i class="fas fa-project-diagram"></i>Auto-ML Predictor (Random Forest)</h4>
-                        <p class="text-sm text-gray-300 mb-3 leading-relaxed">${fi.text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')}</p>
-                        <div class="flex flex-wrap gap-2 mt-2">
-                            ${fi.importance.map(i => `<span class="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-gray-300 shadow-sm transition hover:bg-white/10">${i.feature}: <span class="text-emerald-400 font-bold ml-1">${i.score}</span></span>`).join('')}
-                        </div>
-                    </div>`;
-                }
-                
-                // Hypothesis Testing
-                if (data.advanced_ml.hypotheses && data.advanced_ml.hypotheses.length > 0) {
-                    const hs = data.advanced_ml.hypotheses;
-                    amlHTML += `<div class="bg-black/20 p-4 rounded-xl border border-white/10 shadow-inner md:col-span-2">
-                        <h4 class="font-bold text-sky-400 mb-2 flex items-center gap-2"><i class="fas fa-flask"></i>Autonomous Hypothesis Engine (Statistically Tested)</h4>
-                        <div class="space-y-3">
-                            ${hs.map(h => `
-                                <div class="bg-white/5 p-3 rounded-lg border ${h.significant ? 'border-sky-500/50' : 'border-white/10'}">
-                                    <p class="text-xs font-bold text-sky-300 mb-1 border-b border-white/10 pb-1">${h.hypothesis} <span class="float-right font-mono font-normal opacity-50">${h.test_type}</span></p>
-                                    <p class="text-sm text-gray-300 leading-relaxed mt-2">${h.conclusion.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')}</p>
+            // 5. Scenario Simulation
+            if (data.scenarios && data.scenarios.length > 0) {
+                 const simDiv = document.createElement('div');
+                 simDiv.className = "bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-orange-100 dark:border-orange-900/30 mb-6";
+                 simDiv.innerHTML = `
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="p-2 bg-orange-100 dark:bg-orange-950 rounded-lg"><i class="fas fa-project-diagram text-orange-600 text-lg"></i></div>
+                        <h3 class="text-xl font-black text-gray-800 dark:text-gray-200 uppercase tracking-tighter">Predictive Scenario Simulations</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${data.scenarios.map(sc => `
+                            <div class="p-6 bg-orange-50/50 dark:bg-orange-900/10 rounded-2xl border border-orange-100 dark:border-orange-900/20 hover:scale-[1.02] transition-transform cursor-pointer">
+                                <h4 class="font-bold text-orange-700 dark:text-orange-400 mb-1">${sc.title}</h4>
+                                <p class="text-xs text-gray-500 mb-3">${sc.description}</p>
+                                <div class="bg-white dark:bg-gray-900 p-3 rounded-xl border border-orange-200 dark:border-orange-800 font-mono text-sm mb-3">
+                                    <span class="text-orange-600 font-bold">${sc.outcome.split('|')[0]}</span>
+                                    <span class="text-gray-400 mx-2">|</span>
+                                    <span class="text-slate-500">${sc.outcome.split('|')[1]}</span>
                                 </div>
-                            `).join('')}
-                        </div>
-                    </div>`;
-                }
-                
-                document.getElementById('agent-advanced-content').innerHTML = amlHTML;
-            } else {
-                document.getElementById('agent-advanced-ml').classList.add('hidden');
+                                <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest"><i class="fas fa-info-circle mr-1"></i>${sc.impact}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                 `;
+                 execDiv.after(simDiv);
             }
 
-            // Insights
+            // 6. Advanced ML (Hypotheses)
+            if (data.hypotheses && data.hypotheses.length > 0) {
+                document.getElementById('agent-advanced-ml').classList.remove('hidden');
+                let amlHTML = `<div class="bg-black/20 p-6 rounded-2xl border border-white/10 shadow-inner md:col-span-2">
+                    <h4 class="font-bold text-sky-400 mb-4 flex items-center gap-3 text-lg"><i class="fas fa-flask-vial"></i>AUTONOMOUS HYPOTHESIS ENGINE</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${data.hypotheses.map(h => `
+                            <div class="bg-white/5 p-5 rounded-2xl border ${h.significant ? 'border-sky-500/50 shadow-[0_0_15px_rgba(14,165,233,0.1)]' : 'border-white/10'} transition-all hover:bg-white/10">
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="px-2 py-0.5 bg-sky-500/20 text-sky-300 text-[10px] font-black rounded uppercase">${h.test_type}</span>
+                                    ${h.significant ? '<span class="text-[10px] font-black text-emerald-400 flex items-center gap-1"><i class="fas fa-check-circle"></i> STATISTICALLY SIGNIFICANT</span>' : ''}
+                                </div>
+                                <p class="text-sm font-bold text-white mb-3">${h.hypothesis}</p>
+                                <p class="text-xs text-gray-400 leading-relaxed">${h.conclusion.replace(/\*\*(.*?)\*\*/g, '<strong class="text-sky-300">$1</strong>')}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+                document.getElementById('agent-advanced-content').innerHTML = amlHTML;
+            }
+
+            // 7. Insights
             const insDiv = document.getElementById('agent-insights');
             insDiv.innerHTML = data.insights.map(ins => {
-                const colors = { indigo:'indigo', blue:'blue', purple:'purple', teal:'teal', rose:'rose', amber:'amber', green:'green', red:'red' };
-                const c = colors[ins.color] || 'gray';
-                return `<div class="flex items-start gap-3 p-3 bg-${c}-50 dark:bg-${c}-950 rounded-xl border border-${c}-200 dark:border-${c}-800">
-                    <i class="fas ${ins.icon} text-${c}-500 mt-1"></i>
-                    <div><span class="text-xs font-bold text-${c}-700 dark:text-${c}-300 uppercase">${ins.category}</span>
-                    <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5">${ins.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p></div></div>`;
+                const c = ins.color || 'indigo';
+                return `<div class="flex flex-col gap-2 p-4 bg-${c}-50 dark:bg-${c}-900/20 rounded-2xl border border-${c}-100 dark:border-${c}-800/50 group hover:shadow-md transition-all">
+                    <div class="flex items-start gap-4">
+                        <div class="p-2.5 bg-${c}-100 dark:bg-${c}-800 rounded-xl"><i class="fas ${ins.icon} text-${c}-600 dark:text-${c}-400"></i></div>
+                        <div class="flex-1">
+                            <span class="text-[10px] font-black text-${c}-600 dark:text-${c}-400 uppercase tracking-widest">${ins.category}</span>
+                            <p class="text-sm text-gray-800 dark:text-gray-200 mt-1 font-medium leading-relaxed">${ins.text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-600 dark:text-indigo-400">$1</strong>')}</p>
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-${c}-100 dark:border-${c}-800/50 flex justify-between items-center">
+                        <span class="text-[10px] text-gray-400 font-bold uppercase">Helpful?</span>
+                        <div class="flex items-center gap-2">
+                             <button onclick="submitAgentFeedback('${ins.text.replace(/'/g, "\\'")}', 1)" class="p-1.5 hover:bg-emerald-100 rounded-lg text-emerald-600 transition-colors"><i class="fas fa-thumbs-up"></i></button>
+                             <button onclick="submitAgentFeedback('${ins.text.replace(/'/g, "\\'")}', -1)" class="p-1.5 hover:bg-rose-100 rounded-lg text-rose-600 transition-colors"><i class="fas fa-thumbs-down"></i></button>
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
 
-            // Charts
+            // 8. Charts
             const chartDiv = document.getElementById('agent-charts');
             chartDiv.innerHTML = data.charts.map(ch =>
-                `<div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
-                    <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">${ch.title}</h4>
-                    <iframe src="/static/agent_${agentSessionId}/${ch.file}" class="w-full h-72 border-none rounded-lg"></iframe>
+                `<div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm group">
+                    <div class="px-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                        <h4 class="text-xs font-black text-gray-500 uppercase tracking-wider">${ch.title}</h4>
+                        <i class="fas fa-expand-alt text-gray-400 text-xs cursor-pointer hover:text-indigo-500"></i>
+                    </div>
+                    <iframe src="/static/agent_${aId}/${ch.file}" class="w-full h-80 border-none group-hover:scale-[1.01] transition-transform"></iframe>
                 </div>`
             ).join('');
-            if (data.charts.length === 0) chartDiv.innerHTML = '<p class="text-gray-400 text-sm">No charts could be generated from this dataset.</p>';
 
-            // Predictions
+            // 9. Predictions
             const predDiv = document.getElementById('agent-predictions');
-            predDiv.innerHTML = data.predictions.map(p => {
-                const trendColor = p.trend === 'increasing' ? 'emerald' : p.trend === 'decreasing' ? 'rose' : 'gray';
-                const trendIcon = p.trend === 'increasing' ? 'fa-arrow-trend-up' : p.trend === 'decreasing' ? 'fa-arrow-trend-down' : 'fa-minus';
-                return `<div class="flex items-start gap-4 p-4 bg-${trendColor}-50 dark:bg-${trendColor}-950 rounded-xl border border-${trendColor}-200 dark:border-${trendColor}-800">
-                    <div class="p-2 bg-${trendColor}-100 dark:bg-${trendColor}-900 rounded-lg"><i class="fas ${trendIcon} text-${trendColor}-600 dark:text-${trendColor}-300 text-lg"></i></div>
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="font-bold text-gray-800 dark:text-gray-200">${p.column}</span>
-                            <span class="px-2 py-0.5 text-xs font-bold rounded bg-${trendColor}-200 dark:bg-${trendColor}-800 text-${trendColor}-800 dark:text-${trendColor}-200">${p.trend.toUpperCase()}</span>
-                            <span class="text-xs text-gray-400">R² = ${p.r2}</span>
-                        </div>
-                        <p class="text-sm text-gray-700 dark:text-gray-300">${p.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>
-                    </div></div>`;
-            }).join('');
+            if (data.ml_insights && data.ml_insights.feature_importance) {
+                const fi = data.ml_insights.feature_importance;
+                predDiv.innerHTML = `<div class="bg-indigo-900/5 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
+                    <div class="flex items-center gap-4 mb-4">
+                         <div class="p-3 bg-indigo-600 rounded-xl text-white"><i class="fas fa-robot text-xl"></i></div>
+                         <div>
+                            <h4 class="font-black text-gray-800 dark:text-white uppercase tracking-tighter">AutoML Insight Generation</h4>
+                            <p class="text-xs text-gray-500">Engine: ${fi.model_used} | Target: ${fi.target}</p>
+                         </div>
+                    </div>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">${fi.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        ${fi.importance.map(i => `
+                            <div class="bg-white dark:bg-gray-900 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-sm">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">${i.feature}</p>
+                                <p class="text-lg font-black text-indigo-600 dark:text-indigo-400">${i.score}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            }
 
-            // Auto Dataset Documentation Engine (Data Dictionary)
+            // 10. Data Dictionary
             if (data.data_dictionary) {
                 const dictBody = document.getElementById('agent-dictionary-body');
                 dictBody.innerHTML = data.data_dictionary.map(d => `
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                        <td class="px-4 py-3 whitespace-nowrap font-bold text-gray-800 dark:text-gray-200">${d.column}</td>
-                        <td class="px-4 py-3 whitespace-nowrap"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 font-mono text-xs rounded border border-gray-200 dark:border-gray-600">${d.type}</span></td>
-                        <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">${d.missing}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-gray-600 dark:text-gray-400">${d.unique.toLocaleString()} levels</td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-sm"><p class="max-w-md">${d.meaning}</p></td>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                        <td class="px-4 py-4 whitespace-nowrap font-black text-gray-800 dark:text-gray-200 text-xs uppercase tracking-tighter">${d.column}</td>
+                        <td class="px-4 py-4 whitespace-nowrap"><span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono text-[10px] rounded border border-slate-200 dark:border-slate-700 uppercase">${d.type}</span></td>
+                        <td class="px-4 py-4 whitespace-nowrap text-xs text-slate-500">${d.missing}</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-xs font-bold text-indigo-600">${d.unique.toLocaleString()} levels</td>
+                        <td class="px-4 py-4 text-gray-600 dark:text-gray-400 text-xs font-medium italic"><p class="max-w-md">${d.meaning}</p></td>
                     </tr>
                 `).join('');
             }
 
-            // Data preview table
-            if (s.preview && s.preview.length > 0) {
-                const cols = Object.keys(s.preview[0]);
-                let tableHTML = '<thead class="bg-gray-50 dark:bg-gray-900"><tr>' +
-                    cols.map(c => `<th class="px-4 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">${c}</th>`).join('') +
-                    '</tr></thead><tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">';
-                s.preview.forEach(row => {
-                    tableHTML += '<tr class="hover:bg-gray-50 dark:hover:bg-gray-700">' +
-                        cols.map(c => `<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">${row[c] != null ? row[c] : ''}</td>`).join('') +
+            // 11. Data Preview
+            if (data.summary && data.summary.preview) {
+                const preview = data.summary.preview;
+                const cols = Object.keys(preview[0]);
+                let tableHTML = `<thead class="bg-slate-900"><tr class="divide-x divide-slate-800">` +
+                    cols.map(c => `<th class="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-900">${c}</th>`).join('') +
+                    '</tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800">';
+                preview.forEach(row => {
+                    tableHTML += `<tr class="hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 divide-x divide-slate-100 dark:divide-slate-800">` +
+                        cols.map(c => `<td class="px-4 py-3 whitespace-nowrap text-xs font-medium text-slate-600 dark:text-slate-400">${row[c] || '-'}</td>`).join('') +
                         '</tr>';
                 });
                 tableHTML += '</tbody>';
@@ -1551,7 +1718,7 @@
                     </button>
                 </div>
             </div>
-            <div class="flex-1 p-4 h-64 overflow-y-auto space-y-3" id="chatbot-messages">
+            <div class="p-4 h-80 overflow-y-auto space-y-3" id="chatbot-messages">
                 <div class="flex items-start">
                     <div class="flex-shrink-0 bg-indigo-100 rounded-full p-2 mr-3">
                         <i class="fas fa-robot text-indigo-600"></i>

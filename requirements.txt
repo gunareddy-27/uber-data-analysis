@@ -2,7 +2,8 @@ flask
 flask-sqlalchemy
 flask-login
 pandas
-numpy
+numpy<2
 scikit-learn
 matplotlib
 plotly
+scipy

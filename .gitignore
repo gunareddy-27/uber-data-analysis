@@ -9,4 +9,5 @@ instance/
 .coverage
 htmlcov/
 *.log
-.DS_Store
+logs/
+static/agent_*/

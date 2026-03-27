@@ -13,26 +13,18 @@ The application uses a modern **Tailwind CSS** Single Page Application (SPA) arc
 
 ## ✨ Key Features
 
-### 1. 🤖 AI Data Analyst Agent (Auto-Insights Generator)
-Upload any CSV (max 50MB) and let the autonomous AI agent to completely analyze the dataset in seconds:
-- **Auto Data Cleaning:** Intelligently imputes missing values (median/mode), detects datetimes, and removes duplicated or entirely empty rows.
-- **Plain English Insights:** Analyzes data distributions, extreme skewness, top correlates, data quality issues, and cardinality in human-readable language.
-- **Auto Data Visualization:** Generates relevant dynamic Plotly charts (Histograms, Correlation Heatmaps, Scatter Plots, Pie Charts, and Time Series).
-- **Trend Predictions:** Harnesses Linear Regressions to analyze directional trends over time and forecast a 30-day projection.
-- **PDF Export:** Click **"Download Report PDF"** for a fully formatted, print-ready document of the agent's findings.
-
-**Advanced ML & Startup-Grade Capabilities within the Agent:**
-- **No-Code AI Workflow Builder:** A visually interactive drag-and-drop pipeline interface that sequences the execution of Data Ingestion, Auto Cleansing, Auto-ML Training, and Knowledge Graph reporting operations.
-- **Auto Dataset Documentation Generator:** Automatically iterates through uploaded dimensions to produce a fully formatted Data Dictionary. It statistically infers column contexts (e.g. tracking booleans, categorical IDs, timestamp sequences) and documents missing densities.
-- **Context-Aware AI (Industry Detection):** Automatically scans column headers to classify the data's domain (e.g., Finance, Retail, Healthcare) and dynamically tailors its business recommendations and KPIs.
-- **Autonomous Hypothesis Engine:** Generates and runs raw statistical algorithms (Welch’s T-Tests) across categorical brackets to autonomously prove or disprove correlations with strict P-Value significance.
-- **Conversational Data Agent:** Includes an onboard AI Chatbot that memorizes the generated dataset payload in the window, allowing users to ask specific natural language questions about their generated statistics, anomalies, and forecasts.
-- **True Auto-ML Model Selection:** Evaluates multiple predictive algorithms (Random Forest, Gradient Boosting, Linear Regressions), calculates R-Squared arrays, and automatically picks the most performant model to predict your primary target column.
-- **Explainable AI (XAI):** Uses programmatic data extraction similar to SHAP to extract the structural weights of your Top 5 ML features and explain *exactly* what percentage they influence the model's decision-making.
-- **Smart Alert System:** Hardcoded thresholds immediately pulse animated UI banners if the unsupervised `IsolationForest` detects a critical volume of high-dimensional dataset outliers mapping outside normal bounds.
-- **Data Quality Scoring:** Algorithmically scores the dataset (out of 100) based on duplicates, missing values, and skewness penalties.
-- **PCA + K-Means Segmentation:** Compresses datasets into a 2D PCA space and automatically detects natural groupings (clusters).
-- **Executive Summary Generator:** Parses numeric algorithms and generates a strictly framed Business Analyst narrative and Technical ML execution summary.
+### 1. 🤖 Uber Analytics Pro: Autonomous AI Data Agent
+The application has been upgraded to a fully **Autonomous Multi-Agent System** that runs a zero-click data intelligence pipeline:
+- **Autonomous Multi-Agent Orchestration:** Deploys specialized sub-agents for **Cleaning, AutoML, Anomaly Detection, Hypothesis Testing, and Executive Reporting** in a coordinated sequence.
+- **One-Click Autonomous Pipeline:** A complete data-to-insight lifecycle with a visual progress tracker, status updates, and stage-by-side execution logic.
+- **Smart Alerting & Anomaly Center:** Real-time monitoring using unsupervised `IsolationForest`. Detects high-dimensional outliers and triggers pulse-animated UI alerts in a dedicated Notification Center.
+- **Predictive Business Scenario Simulation:** Interactive "What-if" simulations (e.g., "Increase demand by 20%") that project revenue impacts and platform efficiency using predictive regression models.
+- **Continuous Learning Feedback Loop:** Users can rate agent insights (👍/👎), which are logged and used by the agent to fine-tune future recommendation weights.
+- **Run Versioning & Drift Detection:** Automatically compares new datasets against historical baselines stored in JSON metadata logs to detect statistical drift and volume anomalies.
+- **Advanced AutoML & XAI:** Compares multiple algorithms (Random Forest, Gradient Boosting) and uses **Explainable AI** to reveal the top 5 drivers behind any prediction.
+- **Autonomous Hypothesis Engine:** Formulates and runs Welch's T-Tests across categorical groups to prove statistical significance (p-values) automatically.
+- **Comprehensive Data Documentation:** Auto-generates a full Data Dictionary with inferred column meanings and cardinality assessments.
+- **Data Quality Scoring:** Compiles a 1-100 quality score based on duplicates, missing values, and distribution skewness.
 
 ### 2. 🏢 Ride-Sharing Data Warehouse (Uber Specific)
 A dedicated module for analyzing Uber/Ride-sharing logistics:
@@ -81,11 +73,10 @@ Clone the repository, create a virtual environment, and install the required dep
 git clone https://github.com/gunareddy-27/uber-data-analysis.git
 cd uber-data-analysis
 
-# Install dependencies
+# Install dependencies (pinned to stable NumPy 1.x)
 pip install -r requirements.txt
 
-# Or manually install core packages:
-pip install flask flask-sqlalchemy flask-login pandas numpy scikit-learn plotly statsmodels werkzeug
+# Note: NumPy < 2.0 is required to maintain compatibility with legacy binary wheels.
 ```
 
 ### 3. Running the App
