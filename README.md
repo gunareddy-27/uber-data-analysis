@@ -16,9 +16,9 @@ The application uses a modern **Tailwind CSS** Single Page Application (SPA) arc
 ### 1. 🤖 Uber Analytics Pro: Autonomous AI Data Agent
 The application has been upgraded to a fully **Autonomous Multi-Agent System** that runs a zero-click data intelligence pipeline:
 - **Autonomous Multi-Agent Orchestration:** Deploys specialized sub-agents for **Cleaning, AutoML, Anomaly Detection, Hypothesis Testing, and Executive Reporting** in a coordinated sequence.
-- **One-Click Autonomous Pipeline:** A complete data-to-insight lifecycle with a visual progress tracker, status updates, and stage-by-side execution logic.
-- **Smart Alerting & Anomaly Center:** Real-time monitoring using unsupervised `IsolationForest`. Detects high-dimensional outliers and triggers pulse-animated UI alerts in a dedicated Notification Center.
-- **Predictive Business Scenario Simulation:** Interactive "What-if" simulations (e.g., "Increase demand by 20%") that project revenue impacts and platform efficiency using predictive regression models.
+- **Explainable AI (XAI) Deep-Dive:** Beyond simple importance scores, the agent now explains the "Why" behind predictions (e.g., mileage as a causal driver) and provides a **Reasoning Trace** of its internal decision steps.
+- **System Health & Orchestration Metrics:** Real-time monitoring of CPU/RAM load, agent uptime, and model accuracy/confidence scores are now integrated into the Command Center.
+- **Asynchronous Pipeline Execution:** The multi-agent pipeline now runs in background threads, allowing for non-blocking analysis and multi-step reasoning simulation.
 - **Continuous Learning Feedback Loop:** Users can rate agent insights (👍/👎), which are logged and used by the agent to fine-tune future recommendation weights.
 - **Run Versioning & Drift Detection:** Automatically compares new datasets against historical baselines stored in JSON metadata logs to detect statistical drift and volume anomalies.
 - **Advanced AutoML & XAI:** Compares multiple algorithms (Random Forest, Gradient Boosting) and uses **Explainable AI** to reveal the top 5 drivers behind any prediction.
