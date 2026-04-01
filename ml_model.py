@@ -6,6 +6,11 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import mean_absolute_error, r2_score, accuracy_score
 import pickle
 import os
+from sklearn.ensemble import IsolationForest
+try:
+    from statsmodels.tsa.arima.model import ARIMA
+except ImportError:
+    ARIMA = None
 
 class UberMLModel:
     """
@@ -31,7 +36,9 @@ class UberMLModel:
             'location_model': os.path.join(model_dir, 'location_model.pkl'),
             'stop_encoder': os.path.join(model_dir, 'stop_encoder.pkl'),
             'loc_cat_encoder': os.path.join(model_dir, 'loc_cat_encoder.pkl'),
-            'loc_purp_encoder': os.path.join(model_dir, 'loc_purp_encoder.pkl')
+            'loc_purp_encoder': os.path.join(model_dir, 'loc_purp_encoder.pkl'),
+            'anomaly_model': os.path.join(model_dir, 'anomaly_model.pkl'),
+            'forecast_model': os.path.join(model_dir, 'forecast_model.pkl')
         }
 
     def prepare_data(self, df):
@@ -63,6 +70,8 @@ class UberMLModel:
         self._train_demand(df)
         self._train_classification(df)
         self._train_location(df)
+        self._train_anomaly_detection(df)
+        self._train_time_series_forecast(df)
         print("--- Global Training Complete ---")
 
     def _train_duration(self, df):
@@ -146,6 +155,32 @@ class UberMLModel:
         self._save('loc_cat_encoder', le_cat)
         self._save('loc_purp_encoder', le_purp)
         print("✓ Smart Destination Model Trained.")
+
+    def _train_anomaly_detection(self, df):
+        """Train Isolation Forest to detect outlier rides (fraud/errors)."""
+        X = df[['MILES', 'Trip_Duration']]
+        model = IsolationForest(contamination=0.08, random_state=42)
+        model.fit(X)
+        self._save('anomaly_model', model)
+        print("✓ Anomaly Detection Model (Isolation Forest) Trained.")
+
+    def _train_time_series_forecast(self, df):
+        """Train ARIMA model for next 24 hours demand forecasting."""
+        if ARIMA is None:
+            print("⚠ Statsmodels (ARIMA) not installed. Skipping forecast training.")
+            return
+
+        df['Date'] = df['START_DATE'].dt.date
+        series = df.groupby('Date').size()
+        
+        try:
+            # ARIMA(5,1,0) for daily trend tracking
+            model = ARIMA(series.values, order=(5, 1, 0))
+            model_fit = model.fit()
+            self._save('forecast_model', model_fit)
+            print("✓ Time-Series Forecast Model (ARIMA) Trained.")
+        except Exception as e:
+            print(f"⚠ ARIMA Training failed: {e}")
 
     def _save(self, key, obj):
         with open(self.paths[key], 'wb') as f:

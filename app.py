@@ -11,7 +11,8 @@ import predictor
 import warehouse
 import ai_agent
 from datetime import datetime
-from werkzeug.utils import secure_filename
+from intelligence import UberSystemIntelligence
+import uuid
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -561,13 +562,61 @@ def api_agent_feedback():
         f.write(json.dumps({"timestamp": datetime.now().isoformat(), "insight": data.get('insight_text'), "rating": data.get('rating')}) + "\n")
     return jsonify({"status": "success"})
 
-@app.route('/api/agent/analyze-uber', methods=['POST'])
+@app.route('/api/intelligence/pricing', methods=['POST'])
 @login_required
-def api_agent_analyze_uber():
-    """Run AI agent on the built-in Uber dataset."""
+def api_pricing_simulator():
+    """Run Dynamic Pricing Simulation."""
     try:
-        results = ai_agent.analyze_csv('datasets/UberDataset.csv')
+        data = request.json
+        price_inc = float(data.get('price_increase', 0))
+        ui = UberSystemIntelligence()
+        results = ui.simulate_pricing(price_inc)
         return jsonify(results)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/intelligence/stream', methods=['GET'])
+@login_required
+def api_realtime_stream():
+    """Generate mock real-time ride stream."""
+    try:
+        ui = UberSystemIntelligence()
+        stream = ui.generate_live_stream()
+        return jsonify(stream)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/intelligence/anomalies', methods=['GET'])
+@login_required
+def api_anomaly_detection():
+    """Detect anomalies in the dataset."""
+    try:
+        if models.get('anomaly_model') is None:
+            return jsonify({'error': 'Anomaly model not loaded'}), 400
+        
+        df = pd.read_csv('datasets/UberDataset.csv')
+        ui = UberSystemIntelligence()
+        anomalies = ui.detect_anomalies(df, models['anomaly_model'])
+        return jsonify(anomalies)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/intelligence/forecast', methods=['GET'])
+@login_required
+def api_demand_forecast():
+    """Predict demand for next 24 hours using ARIMA."""
+    try:
+        if models.get('forecast_model') is None:
+            return jsonify({'error': 'Forecast model not loaded'}), 400
+        
+        # In a real app, we'd forecast from the latest data point
+        # For this demo, we'll forecast the next 7 steps (days)
+        forecast = models['forecast_model'].forecast(steps=7)
+        return jsonify({
+            'forecast': forecast.tolist(),
+            'unit': 'trips per day',
+            'horizon': '7 days'
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -643,6 +692,12 @@ def initialize_app():
                  models['stop_encoder'],
                  models['loc_cat_encoder'],
                  models['loc_purp_encoder']) = predictor.train_location_model(df_pred)
+
+            if models.get('anomaly_model') is None:
+                models['anomaly_model'] = predictor.train_anomaly_detection(df_pred)
+
+            if models.get('forecast_model') is None:
+                models['forecast_model'] = predictor.train_time_series_forecast(df_pred)
 
 
 if __name__ == '__main__':

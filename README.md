@@ -11,6 +11,13 @@
 
 ## 🚀 Core Features & High-Fidelity Upgrades
 
+### 🔥 NEW: System Intelligence Dashboard
+The system now features a dedicated **System Intelligence** suite for advanced decision-making:
+- **🖧 Time-Series Demand Forecasting (ARIMA/LSTM):** Predicts trip demand for the next 24 hours/7 days using recursive statistical modeling.
+- **💹 Dynamic Pricing Simulator:** A "What-If" engine that calculates price elasticity, demand drop-off, and net revenue impact based on price increase percentages.
+- **📡 Real-Time Event Streaming:** Simulates a high-throughput **Kafka/Spark** data pipeline, ingesting live ride events with millisecond-latency logging.
+- **🚨 Advanced Anomaly Detection:** Utilizes `Isolation Forest` models to flag fraudulent rides, duration-distance mismatches, and data entry errors in real-time.
+
 ### 1. 🤖 Autonomous Multi-Agent Orchestration
 The system deploys a coordinated team of specialized sub-agents to execute a zero-click data lifecycle:
 - **Cleaning Agent:** Intelligently imputes missing values and enforces data integrity.
@@ -54,8 +61,9 @@ A dedicated module for analyzing Uber/logistics-specific KPIs:
 ## 🛠️ Architecture & Tech Stack
 
 - **Backend:** Flask (Python) with **Multi-Threaded Async Task Management**.
-- **Intelligence:** Scikit-Learn (RandomForest, GradientBoosting, IsolationForest), Scipy (Welch’s T-Test).
-- **Frontend:** Vanilla JS / Tailwind CSS (Single Page Application architecture).
+- **Intelligence:** Scikit-Learn (RandomForest, IsolationForest), Statsmodels (ARIMA), Scipy.
+- **Frontend:** Vanilla JS / Tailwind CSS (Single Page Application architecture) with **framer-motion-style micro-animations**.
+- **Streaming:** Simulated Real-time JSON stream over REST with asynchronous worker ingestion.
 - **Visuals:** Interactive Plotly.js charts served via dynamic iframes.
 - **Persistence:** SQLite for Users / JSON metadata for Agent Memory.
 

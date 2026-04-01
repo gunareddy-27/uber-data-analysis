@@ -6,6 +6,14 @@ from sklearn.metrics import mean_absolute_error, r2_score, accuracy_score
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 import pickle
 import os
+from sklearn.ensemble import IsolationForest
+try:
+    from statsmodels.tsa.arima.model import ARIMA
+except ImportError:
+    ARIMA = None
+
+ANOMALY_MODEL_PATH = 'models/anomaly_model.pkl'
+FORECAST_MODEL_PATH = 'models/forecast_model.pkl'
 
 MODEL_PATH = 'models/trip_duration_model.pkl'
 SCALER_PATH = 'models/trip_duration_scaler.pkl'
@@ -191,6 +199,34 @@ def train_location_model(df):
         
     return model, le_stop, le_cat, le_purp
 
+def train_anomaly_detection(df):
+    print("Training Anomaly Detection Model (Isolation Forest)...")
+    X = df[['MILES', 'Trip_Duration']].dropna()
+    model = IsolationForest(contamination=0.08, random_state=42)
+    model.fit(X)
+    with open(ANOMALY_MODEL_PATH, 'wb') as f:
+        pickle.dump(model, f)
+    return model
+
+def train_time_series_forecast(df):
+    print("Training Time-Series Forecast Model (ARIMA)...")
+    if ARIMA is None:
+        print("⚠ Statsmodels (ARIMA) not installed. Skipping.")
+        return None
+    
+    df['Date'] = df['START_DATE'].dt.date
+    series = df.groupby('Date').size()
+    
+    try:
+        model = ARIMA(series.values, order=(5, 1, 0))
+        model_fit = model.fit()
+        with open(FORECAST_MODEL_PATH, 'wb') as f:
+            pickle.dump(model_fit, f)
+        return model_fit
+    except Exception as e:
+        print(f"⚠ ARIMA Training failed: {e}")
+        return None
+
 def load_models():
     models = {}
     
@@ -206,9 +242,15 @@ def load_models():
     models['duration_scaler'] = load_pickle(SCALER_PATH)
     print("Loaded Duration Model.")
 
-    models['demand_model'] = load_pickle(DEMAND_MODEL_PATH)
-    models['best_locations'] = load_pickle('models/best_locations_lookup.pkl')
-    print("Loaded Demand and Location Lookup Models.")
+    models['location_model'] = load_pickle(LOCATION_MODEL_PATH)
+    models['stop_encoder'] = load_pickle(STOP_ENCODER_PATH)
+    models['loc_cat_encoder'] = load_pickle(LOC_CAT_ENCODER_PATH)
+    models['loc_purp_encoder'] = load_pickle(LOC_PURP_ENCODER_PATH)
+    print("Loaded Location Model.")
+
+    models['anomaly_model'] = load_pickle(ANOMALY_MODEL_PATH)
+    models['forecast_model'] = load_pickle(FORECAST_MODEL_PATH)
+    print("Loaded Anomaly and Forecast Models.")
 
     models['category_model'] = load_pickle(CATEGORY_MODEL_PATH)
     models['purpose_model'] = load_pickle(PURPOSE_MODEL_PATH)
@@ -232,5 +274,7 @@ if __name__ == "__main__":
         train_demand_model(df)
         train_classification_models(df)
         train_location_model(df)
+        train_anomaly_detection(df)
+        train_time_series_forecast(df)
     else:
         print("Dataset not found!")
