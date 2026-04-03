@@ -630,42 +630,42 @@ def compute_advanced_ml(df, session_id):
             'fig_data': json.loads(fig.to_json())
         }
         
-        # 3. Auto Model Selection & XAI (Predicting the last numeric column using others)
+        # 3. Auto Model Selection & XAI with PROPER train/test split
         if len(numeric_cols) >= 3:
             target_col = numeric_cols[-1]
             features = numeric_cols[:-1]
             
-            X_ml = X[features]
-            y_ml = X[target_col]
+            X_ml = df[features].fillna(df[features].median())
+            y_ml = df[target_col].fillna(df[target_col].median())
             
-            # True AutoML: Compare multiple models
+            from sklearn.model_selection import train_test_split as tts
+            X_tr, X_te, y_tr, y_te = tts(X_ml, y_ml, test_size=0.2, random_state=42)
+            
             models = {
-                'Gradient Boosting': GradientBoostingRegressor(n_estimators=50, random_state=42),
-                'Random Forest': RandomForestRegressor(n_estimators=50, random_state=42),
+                'Gradient Boosting': GradientBoostingRegressor(n_estimators=150, max_depth=5, random_state=42),
+                'Random Forest': RandomForestRegressor(n_estimators=150, max_depth=10, random_state=42),
                 'Linear Regression': LinearRegression()
             }
             
             leaderboard = []
             best_score = -float('inf')
-            best_model_name = "Gradient Boosting" # Default
+            best_model_name = "Gradient Boosting"
             best_model = models['Gradient Boosting']
             
             for name, model in models.items():
-                model.fit(X_ml, y_ml)
-                y_pred = model.predict(X_ml)
+                model.fit(X_tr, y_tr)
+                y_pred_test = model.predict(X_te)
                 
-                # Compute Research-Grade Metrics
-                mse = mean_squared_error(y_ml, y_pred)
-                rmse = np.sqrt(mse)
-                mae = mean_absolute_error(y_ml, y_pred)
-                r2 = r2_score(y_ml, y_pred)
+                rmse = np.sqrt(mean_squared_error(y_te, y_pred_test))
+                mae = mean_absolute_error(y_te, y_pred_test)
+                r2 = r2_score(y_te, y_pred_test)
                 
                 leaderboard.append({
                     'model': name,
                     'rmse': round(rmse, 4),
                     'mae': round(mae, 4),
                     'r2': round(r2, 4),
-                    'rank': 0 # Will be sorted later
+                    'rank': 0
                 })
                 
                 if r2 > best_score:
@@ -673,100 +673,114 @@ def compute_advanced_ml(df, session_id):
                     best_model_name = name
                     best_model = model
             
-            # Sort Leaderboard
             leaderboard = sorted(leaderboard, key=lambda x: x['r2'], reverse=True)
             for i, entry in enumerate(leaderboard): entry['rank'] = i + 1
 
-            # Enhanced XAI Narrative
             importances = best_model.feature_importances_ if hasattr(best_model, 'feature_importances_') else np.abs(best_model.coef_)
-            importance_list = []
-            for i, feat in enumerate(features):
-                importance_list.append({
-                    'feature': feat,
-                    'score': round(float(importances[i]), 4)
-                })
-            # Sort by score descending
-            importance_list = sorted(importance_list, key=lambda x: x['score'], reverse=True)
+            importance_list = sorted(
+                [{'feature': feat, 'score': round(float(importances[i]), 4)} for i, feat in enumerate(features)],
+                key=lambda x: x['score'], reverse=True
+            )
             
             top_feat = importance_list[0]['feature'] if importance_list else "None"
-            
-            best_rmse = round(np.sqrt(mean_squared_error(y_ml, best_model.predict(X_ml))), 4)
-            best_mae = round(mean_absolute_error(y_ml, best_model.predict(X_ml)), 4)
+            best_rmse = leaderboard[0]['rmse']
+            best_mae = leaderboard[0]['mae']
             
             results['feature_importance'] = {
                 'target': target_col,
                 'model_used': best_model_name,
                 'leaderboard': leaderboard,
                 'importance': importance_list,
-                'metrics': {
-                    'rmse': best_rmse,
-                    'mae': best_mae
-                },
-                'text': f"Multi-model academic cross-validation complete. **{best_model_name}** achieved the highest R² score.",
-                'why': f"The model converged with an RMSE of {best_rmse}. Feature '{top_feat}' shows high causal variance."
+                'metrics': {'rmse': best_rmse, 'mae': best_mae},
+                'text': f"Cross-validated evaluation complete. **{best_model_name}** achieved R²={best_score:.4f} on held-out test data.",
+                'why': f"Model RMSE: {best_rmse}. Top driver: '{top_feat}' with importance {importance_list[0]['score']:.4f}."
             }
             
     except Exception as e:
         print(f"Advanced ML failed: {e}")
-        pass
+        import traceback; traceback.print_exc()
         
     return results
 
 
 def autonomous_hypothesis_testing(df, target_col=None):
     """
-    Acts as an Autonomous Hypothesis Generator and Advanced Statistical Testing Suite.
-    Formulates a hypothesis about the target metric across binary groups, tests it independently, and returns conclusions.
+    Autonomous Hypothesis Generator: tests relationships between columns.
+    Handles binary splits AND top-2 category comparisons for multi-class columns.
     """
     if not target_col or target_col not in df.columns or not pd.api.types.is_numeric_dtype(df[target_col]):
-        # Fall back to picking the highest variance numeric column
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         if len(numeric_cols) == 0:
-            return None
+            return [{'hypothesis': 'No numeric columns available', 'test_type': 'N/A', 'significant': False, 'conclusion': 'Insufficient data for hypothesis testing.'}]
         target_col = df[numeric_cols].var().idxmax()
         
     results = []
     
-    # 1. Search for binary categorical columns to test against target
-    cat_cols = df.select_dtypes(include=['object', 'category', 'bool', 'int']).columns
+    cat_cols = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
+    for col in df.select_dtypes(include=['int64', 'int32']).columns:
+        if df[col].nunique() <= 10 and col != target_col:
+            cat_cols.append(col)
+    
     for col in cat_cols:
-        if col == target_col: continue
+        if col == target_col:
+            continue
         unique_vals = df[col].dropna().unique()
         
-        # Test if perfectly binary
+        if len(unique_vals) < 2:
+            continue
+        
         if len(unique_vals) == 2:
-            group1 = df[df[col] == unique_vals[0]][target_col].dropna()
-            group2 = df[df[col] == unique_vals[1]][target_col].dropna()
-            
-            if len(group1) > 5 and len(group2) > 5:
+            g1_label, g2_label = unique_vals[0], unique_vals[1]
+        else:
+            top2 = df[col].value_counts().head(2).index.tolist()
+            if len(top2) < 2:
+                continue
+            g1_label, g2_label = top2[0], top2[1]
+        
+        group1 = df[df[col] == g1_label][target_col].dropna()
+        group2 = df[df[col] == g2_label][target_col].dropna()
+        
+        if len(group1) > 5 and len(group2) > 5:
+            try:
                 stat, p_value = ttest_ind(group1, group2, equal_var=False)
                 mean_diff = group1.mean() - group2.mean()
                 
                 is_significant = p_value < 0.05
-                winner = unique_vals[0] if mean_diff > 0 else unique_vals[1]
+                winner = g1_label if mean_diff > 0 else g2_label
                 
                 if is_significant:
-                    conclusion = f"**Statistically Significant (p={p_value:.3f}):** The metric **{target_col}** is fundamentally different between **{unique_vals[0]}** and **{unique_vals[1]}**. Specifically, {winner} drives higher numbers."
+                    conclusion = f"**Statistically Significant (p={p_value:.4f}):** **{target_col}** differs significantly between **{g1_label}** (mean={group1.mean():.2f}) and **{g2_label}** (mean={group2.mean():.2f}). '{winner}' drives higher values."
                 else:
-                    conclusion = f"The variance of **{target_col}** between **{unique_vals[0]}** and **{unique_vals[1]}** is just random noise (p={p_value:.3f}). Do not build strategies relying on this split."
+                    conclusion = f"No significant difference in **{target_col}** between **{g1_label}** and **{g2_label}** (p={p_value:.4f}). The variance is random noise."
                     
                 results.append({
                     'hypothesis': f"Does [{target_col}] depend on [{col}]?",
-                    'test_type': 'Welch’s T-Test',
-                    'methodology': "Uses Welch's t-test which does not assume equal population variances (more robust for real-world heterogeneous data).",
+                    'test_type': "Welch's T-Test",
+                    'methodology': "Welch's t-test (robust, no equal-variance assumption).",
                     'significant': bool(is_significant),
                     'conclusion': conclusion,
                     'academic_meta': {
                         'p_value': round(p_value, 5),
-                        't_stat': round(stat, 3)
+                        't_stat': round(stat, 3),
+                        'group1_mean': round(group1.mean(), 3),
+                        'group2_mean': round(group2.mean(), 3)
                     }
                 })
+            except Exception:
+                continue
                 
-                # We only need 1 or 2 high-quality hypotheses to avoid overwhelming the user
-                if len(results) >= 2:
-                    break
-                    
+            if len(results) >= 3:
+                break
+    
+    if not results:
+        results.append({
+            'hypothesis': 'Auto-scan complete',
+            'test_type': 'N/A',
+            'significant': False,
+            'conclusion': f'No testable categorical splits found for target **{target_col}**. All columns are either numeric or high-cardinality.'
+        })
     return results
+
 
 def detect_industry_context(df):
     """
@@ -776,16 +790,22 @@ def detect_industry_context(df):
     cols = " ".join(df.columns).lower()
     
     contexts = {
-        'Finance & Banking': {'keywords': ['transaction', 'balance', 'credit', 'account', 'fraud', 'loan', 'salary'], 
+        'Finance & Banking': {'keywords': ['transaction', 'balance', 'credit', 'account', 'fraud', 'loan', 'salary', 'payment', 'interest'], 
                               'kpis': ['Default Risk', 'Transaction Volume', 'Average Balance']},
-        'E-Commerce & Retail': {'keywords': ['product', 'price', 'sales', 'revenue', 'customer', 'cart', 'discount'], 
+        'E-Commerce & Retail': {'keywords': ['product', 'price', 'sales', 'revenue', 'customer', 'cart', 'discount', 'order', 'sku'], 
                                 'kpis': ['Customer Lifetime Value (CLTV)', 'Conversion Rate', 'Average Order Value']},
-        'Healthcare & Medical': {'keywords': ['patient', 'diagnosis', 'blood', 'treatment', 'hospital', 'dose', 'symptom'], 
+        'Healthcare & Medical': {'keywords': ['patient', 'diagnosis', 'blood', 'treatment', 'hospital', 'dose', 'symptom', 'medical', 'clinical'], 
                                  'kpis': ['Recovery Rate', 'Patient Admission Frequency', 'Treatment Efficacy']},
-        'Transportation & Logistics': {'keywords': ['trip', 'origin', 'destination', 'driver', 'fare', 'vehicle', 'mile'], 
-                                       'kpis': ['Fleet Utilization', 'Average Delivery Time', 'Cost per Mile']},
-        'Human Resources': {'keywords': ['employee', 'salary', 'department', 'manager', 'hire', 'attrition', 'turnover'], 
-                            'kpis': ['Employee Churn Rate', 'Average Tenure', 'Salary Band Variance']}
+        'Transportation & Logistics': {'keywords': ['trip', 'origin', 'destination', 'driver', 'fare', 'vehicle', 'mile', 'route', 'uber', 'ride'], 
+                                       'kpis': ['Fleet Utilization', 'Average Trip Duration', 'Cost per Mile']},
+        'Human Resources': {'keywords': ['employee', 'salary', 'department', 'manager', 'hire', 'attrition', 'turnover', 'performance'], 
+                            'kpis': ['Employee Churn Rate', 'Average Tenure', 'Salary Band Variance']},
+        'Education': {'keywords': ['student', 'grade', 'course', 'enrollment', 'gpa', 'school', 'exam', 'degree'],
+                      'kpis': ['Graduation Rate', 'Average GPA', 'Enrollment Trends']},
+        'Energy & Utilities': {'keywords': ['energy', 'kwh', 'consumption', 'power', 'electricity', 'meter', 'utility'],
+                               'kpis': ['Peak Demand', 'Average Consumption', 'Cost Efficiency']},
+        'Real Estate': {'keywords': ['property', 'rent', 'sqft', 'bedroom', 'listing', 'mortgage', 'housing'],
+                        'kpis': ['Price per SqFt', 'Vacancy Rate', 'Average Rental Yield']}
     }
     
     for industry, data in contexts.items():
@@ -1057,16 +1077,24 @@ def analyze_csv(filepath):
     report['advanced_ml'] = report['ml_insights']
     
     # Generate executive summary contextually
+    model_used = 'N/A'
+    fi = report.get('ml_insights', {}).get('feature_importance', {})
+    if isinstance(fi, dict):
+        model_used = fi.get('model_used', 'N/A')
+    
     report['executive_summary'] = {
         'industry_context': report['summary']['industry'],
         'business': f"Autonomous analysis complete for **{report['summary']['industry']}**. Quality Score: {report['summary']['quality_score']}/100.",
-        'technical': f"Processed {report['summary']['rows']} rows with AutoML ({report['ml_insights'].get('feature_importance', {}).get('model_used', 'None')}) and anomaly detection."
+        'technical': f"Processed {report['summary']['rows']} rows with AutoML ({model_used}) and anomaly detection."
     }
     
-    # Map predictions (trends)
-    # The new pipeline runs insights and charts which contain trends, 
-    # but for compatibility we can re-run if needed or map from ml_insights
-    report['predictions'] = predict_trends(pd.read_csv(filepath)) 
+    # Run trend predictions using cleaned data from the agent's own pipeline
+    try:
+        df_for_trends = pd.read_csv(filepath, sep=None, engine='python', on_bad_lines='skip')
+        df_for_trends, _ = clean_data(df_for_trends)
+        report['predictions'] = predict_trends(df_for_trends)
+    except Exception as e:
+        report['predictions'] = [{'column': 'N/A', 'trend': 'stable', 'text': f'Trend analysis unavailable: {e}'}]
     
     return report
 

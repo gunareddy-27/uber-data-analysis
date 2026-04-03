@@ -230,8 +230,22 @@ def app_main():
                 hour = int(request.form.get('hour', 0))
                 weekday = int(request.form.get('weekday', 0))
 
+                # Build full feature set for the upgraded model
+                month = datetime.now().month
                 input_df = pd.DataFrame([{
-                    'MILES': miles, 'Hour': hour, 'Weekday': weekday
+                    'MILES': miles, 'Hour': hour, 'Weekday': weekday, 'Month': month,
+                    'Hour_Sin': np.sin(2 * np.pi * hour / 24),
+                    'Hour_Cos': np.cos(2 * np.pi * hour / 24),
+                    'Weekday_Sin': np.sin(2 * np.pi * weekday / 7),
+                    'Weekday_Cos': np.cos(2 * np.pi * weekday / 7),
+                    'Miles_x_Hour': miles * hour,
+                    'Miles_x_Weekday': miles * weekday,
+                    'Hour_Sq': hour ** 2,
+                    'Miles_Sq': miles ** 2,
+                    'Log_Miles': np.log1p(miles),
+                    'Is_Rush_Hour': int((7 <= hour <= 9) or (16 <= hour <= 19)),
+                    'Is_Weekend': int(weekday >= 5),
+                    'Time_Bucket': 0 if hour <= 6 else (1 if hour <= 12 else (2 if hour <= 18 else 3))
                 }])
                 
                 if models.get('duration_model') and models.get('duration_scaler'):
@@ -263,17 +277,25 @@ def app_main():
                 c_miles = float(request.form.get('class_miles'))
                 c_hour = int(request.form.get('class_hour'))
                 c_weekday = int(request.form.get('class_weekday'))
+                c_month = datetime.now().month
                 
                 input_class = pd.DataFrame([{
-                    'MILES': c_miles, 'Hour': c_hour, 'Weekday': c_weekday
+                    'MILES': c_miles, 'Hour': c_hour, 'Weekday': c_weekday, 'Month': c_month,
+                    'Hour_Sin': np.sin(2 * np.pi * c_hour / 24),
+                    'Hour_Cos': np.cos(2 * np.pi * c_hour / 24),
+                    'Weekday_Sin': np.sin(2 * np.pi * c_weekday / 7),
+                    'Weekday_Cos': np.cos(2 * np.pi * c_weekday / 7),
+                    'Miles_x_Hour': c_miles * c_hour,
+                    'Log_Miles': np.log1p(c_miles),
+                    'Is_Rush_Hour': int((7 <= c_hour <= 9) or (16 <= c_hour <= 19)),
+                    'Is_Weekend': int(c_weekday >= 5),
+                    'Time_Bucket': 0 if c_hour <= 6 else (1 if c_hour <= 12 else (2 if c_hour <= 18 else 3))
                 }])
                 
                 if models.get('category_model') and models.get('purpose_model'):
-                    # Predict Category
                     cat_pred = models['category_model'].predict(input_class)[0]
                     predicted_category = models['category_encoder'].inverse_transform([cat_pred])[0]
                     
-                    # Predict Purpose
                     purp_pred = models['purpose_model'].predict(input_class)[0]
                     predicted_purpose = models['purpose_encoder'].inverse_transform([purp_pred])[0]
                 else:
