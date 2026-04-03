@@ -252,17 +252,15 @@ def load_models():
     models['forecast_model'] = load_pickle(FORECAST_MODEL_PATH)
     print("Loaded Anomaly and Forecast Models.")
 
+    models['demand_model'] = load_pickle(DEMAND_MODEL_PATH)
+    models['best_locations'] = load_pickle('models/best_locations_lookup.pkl')
+    print("Loaded Demand and Revenue Optimizer Models.")
+
     models['category_model'] = load_pickle(CATEGORY_MODEL_PATH)
     models['purpose_model'] = load_pickle(PURPOSE_MODEL_PATH)
     models['category_encoder'] = load_pickle(CATEGORY_ENCODER_PATH)
     models['purpose_encoder'] = load_pickle(PURPOSE_ENCODER_PATH)
     print("Loaded Classification Models.")
-
-    models['location_model'] = load_pickle(LOCATION_MODEL_PATH)
-    models['stop_encoder'] = load_pickle(STOP_ENCODER_PATH)
-    models['loc_cat_encoder'] = load_pickle(LOC_CAT_ENCODER_PATH)
-    models['loc_purp_encoder'] = load_pickle(LOC_PURP_ENCODER_PATH)
-    print("Loaded Location Model.")
         
     return models
 

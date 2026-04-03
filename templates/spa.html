@@ -24,6 +24,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -1172,11 +1173,24 @@
                     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">AI Data Analyst Agent</h1>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Upload any CSV — get auto-cleaning, visualizations, insights & trend predictions.</p>
                 </div>
+                <!-- PDF-Only Header -->
+                <div id="autonomous-pdf-header" class="hidden pb-8 mb-8 border-b-2 border-indigo-600">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-sm font-black text-indigo-600 uppercase tracking-widest mb-1">Official Intelligence Report</h2>
+                            <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">Uber Analyst Intelligence</h1>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-xs font-bold text-slate-400 uppercase">Generated On</p>
+                             <p class="font-black text-slate-900 report-timestamp-placeholder">${new Date().toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex items-center space-x-3 text-right">
-                    <button id="agent-download-pdf-btn" onclick="window.print()" class="hidden px-4 py-2 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 text-white text-sm font-bold rounded-lg shadow transition">
-                        <i class="fas fa-file-pdf mr-1 text-red-400"></i> Download Report PDF
+                    <button id="agent-download-pdf-btn" onclick="agentDownloadPDF()" class="hidden px-4 py-2 bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-500 text-white text-sm font-black rounded-xl shadow-lg transition-all active:scale-95 group">
+                        <i class="fas fa-file-pdf mr-2 text-rose-300 group-hover:scale-110 transition-transform"></i> EXPORT ANALYTICS REPORT
                     </button>
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 animate-pulse">AI Powered</span>
+                    <span class="px-3 py-1 rounded-full text-[10px] font-black bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800 animate-pulse uppercase tracking-[0.2em]">Live Intelligence Agent</span>
                 </div>
             </div>
 
@@ -1427,8 +1441,11 @@
             // Save state (optional)
             localStorage.setItem('activeTab', sectionId);
         }
+    </script>
 
-        // ─── AI AGENT LOGIC ───
+    <!-- UI Utilities & PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
         let agentSessionId = null;
 
         document.getElementById('agent-file-input').addEventListener('change', function(e) {
@@ -1517,6 +1534,62 @@
                     }
                 })
                 .catch(err => console.error('Alert Fetch Error:', err));
+        }
+
+        async function agentDownloadPDF() {
+            const btn = document.getElementById('agent-download-pdf-btn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> PREPARING PDF...';
+            btn.disabled = true;
+
+            const element = document.getElementById('section-agent');
+            const pdfHeader = document.getElementById('autonomous-pdf-header');
+            const originalHeader = element.querySelector('h1').parentElement; // Title div
+            
+            // Populate timestamp
+            const ts = pdfHeader.querySelector('.report-timestamp-placeholder');
+            if (ts) ts.innerText = new Date().toLocaleString();
+
+            // Toggle visibility
+            pdfHeader.classList.remove('hidden');
+            originalHeader.classList.add('hidden');
+            
+            const elementsToIgnore = [
+                'agent-download-pdf-btn',
+                'agent-upload-area',
+                'autonomous-pipeline-ui'
+            ];
+            elementsToIgnore.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.setAttribute('data-html2canvas-ignore', 'true');
+            });
+
+            const opt = {
+                margin:       [0.5, 0.5],
+                filename:     `Uber_AI_Analyst_Report_${agentSessionId || 'export'}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    letterRendering: true,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            try {
+                await html2pdf().set(opt).from(element).save();
+            } catch (err) {
+                console.error("PDF Export Error:", err);
+                alert("PDF export failed. Resorting to standard print.");
+                window.print();
+            } finally {
+                pdfHeader.classList.add('hidden');
+                originalHeader.classList.remove('hidden');
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
         }
 
         function submitAgentFeedback(text, rating) {
@@ -1731,15 +1804,49 @@
 
             // 8. Charts
             const chartDiv = document.getElementById('agent-charts');
-            chartDiv.innerHTML = data.charts.map(ch =>
-                `<div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm group">
-                    <div class="px-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                        <h4 class="text-xs font-black text-gray-500 uppercase tracking-wider">${ch.title}</h4>
-                        <i class="fas fa-expand-alt text-gray-400 text-xs cursor-pointer hover:text-indigo-500"></i>
+            if (data.charts && data.charts.length > 0) {
+                chartDiv.innerHTML = data.charts.map((ch, idx) => `
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm group">
+                        <div class="px-4 py-3 bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <h4 class="text-xs font-black text-gray-500 uppercase tracking-wider">${ch.title}</h4>
+                            <i class="fas fa-expand-alt text-gray-400 text-xs cursor-pointer hover:text-indigo-500"></i>
+                        </div>
+                        <div id="agent-chart-${idx}" class="w-full h-80 px-2 py-4"></div>
                     </div>
-                    <iframe src="/static/agent_${aId}/${ch.file}" class="w-full h-80 border-none group-hover:scale-[1.01] transition-transform"></iframe>
-                </div>`
-            ).join('');
+                `).join('');
+
+                data.charts.forEach((ch, idx) => {
+                    if (ch.fig_data) {
+                        Plotly.newPlot(`agent-chart-${idx}`, ch.fig_data.data, ch.fig_data.layout, {
+                            responsive: true, 
+                            displayModeBar: false,
+                            margin: { t: 30, b: 30, l: 30, r: 30 }
+                        });
+                    }
+                });
+            } else {
+                chartDiv.innerHTML = '<p class="col-span-full text-center text-gray-400 py-10">No charts generated for this dataset.</p>';
+            }
+
+            // 8.5 Machine Learning Cluster Chart
+            if (data.ml_insights && data.ml_insights.cluster_chart && data.ml_insights.cluster_chart.fig_data) {
+                 const amlContainer = document.getElementById('agent-advanced-content');
+                 const clusterDivId = 'agent-ml-cluster-chart';
+                 const clusterHTML = `
+                    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 md:col-span-2">
+                        <h4 class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4">${data.ml_insights.cluster_chart.title}</h4>
+                        <div id="${clusterDivId}" class="w-full h-[450px]"></div>
+                    </div>
+                 `;
+                 amlContainer.insertAdjacentHTML('beforeend', clusterHTML);
+                 Plotly.newPlot(clusterDivId, data.ml_insights.cluster_chart.fig_data.data, {
+                     ...data.ml_insights.cluster_chart.fig_data.layout,
+                     template: 'plotly_dark',
+                     paper_bgcolor: 'rgba(0,0,0,0)',
+                     plot_bgcolor: 'rgba(0,0,0,0)',
+                     font: { color: '#a5b4fc' }
+                 }, {responsive: true, displayModeBar: false});
+            }
 
             // 9. Predictions & XAI Why
             const predDiv = document.getElementById('agent-predictions');

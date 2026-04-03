@@ -1,9 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
+from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 import os
 import pandas as pd
 import numpy as np
+import threading
+import time
+import psutil 
 from analysis import analyze_data
 from visualization import plot_analysis
 from clustering import cluster_rides
@@ -33,10 +37,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 # Global model objects and Async Tasks
 models = {}
 async_tasks = {} # Stores {task_id: {status: 'running', result: None, start_time: ...}}
-
-import threading
-import time
-import psutil # For system metrics
+APP_START_TIME = time.time()
 
 # User Model
 class User(UserMixin, db.Model):
@@ -454,6 +455,19 @@ def api_agent_analyze():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/agent/analyze-uber', methods=['POST'])
+@login_required
+def api_agent_analyze_uber():
+    """Run AI agent analysis on the main Uber dataset."""
+    try:
+        filepath = 'datasets/UberDataset.csv'
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'Uber dataset not found'}), 404
+        results = ai_agent.analyze_csv(filepath)
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/agent/autonomous-cycle', methods=['POST'])
 @login_required
 def api_agent_autonomous():
@@ -520,7 +534,7 @@ def api_system_metrics():
     return jsonify({
         'cpu': cpu_usage,
         'ram': ram_usage,
-        'uptime': round(time.time() - async_tasks.get('start_time', time.time()), 1),
+        'uptime': round(time.time() - APP_START_TIME, 1),
         'active_threads': threading.active_count(),
         'avg_processing_time': "4.2s",
         'model_accuracy': "94.2%"
@@ -681,7 +695,7 @@ def initialize_app():
                 models['duration_model'], models['duration_scaler'] = predictor.train_trip_duration_model(df_pred)
                 
             if models.get('demand_model') is None:
-                models['demand_model'] = predictor.train_demand_model(df_pred)
+                models['demand_model'], models['best_locations'] = predictor.train_demand_model(df_pred)
 
             if models.get('category_model') is None:
                 print("Training classification models...")
