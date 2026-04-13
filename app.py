@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, send_file
 from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
@@ -17,6 +17,7 @@ import ai_agent
 from datetime import datetime
 from intelligence import UberSystemIntelligence
 import uuid
+from pdf_generator import generate_live_events_pdf
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -36,8 +37,14 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 
 # Global model objects and Async Tasks
 models = {}
-async_tasks = {} # Stores {task_id: {status: 'running', result: None, start_time: ...}}
+async_tasks = {} 
 APP_START_TIME = time.time()
+SYSTEM_INSIGHTS = {
+    'health': 'Initializing...',
+    'strategic_actions': [],
+    'quality_score': 0,
+    'uptime': 0
+}
 
 # User Model
 class User(UserMixin, db.Model):
@@ -734,6 +741,95 @@ def initialize_app():
 
             if models.get('forecast_model') is None:
                 models['forecast_model'] = predictor.train_time_series_forecast(df_pred)
+
+@app.route('/api/system_alerts')
+@login_required
+def get_system_alerts():
+    """Returns background autonomous insights and hardware health."""
+    global SYSTEM_INSIGHTS
+    
+    # Refresh live hardware metrics
+    SYSTEM_INSIGHTS['hardware'] = {
+        'cpu': psutil.cpu_percent(),
+        'ram': psutil.virtual_memory().percent,
+        'uptime_hrs': round((time.time() - APP_START_TIME) / 3600, 2)
+    }
+    
+    # Inject current sim optimization
+    intel = UberSystemIntelligence()
+    SYSTEM_INSIGHTS['market_optimization'] = intel.find_optimal_price_increase()
+    SYSTEM_INSIGHTS['surge_status'] = intel.predict_surge_triggers()
+    
+    # Inject Model Metrics
+    SYSTEM_INSIGHTS['model_performance'] = {
+        'duration': models.get('duration_metrics', {}),
+        'demand': models.get('demand_metrics', {}),
+        'category': models.get('category_metrics', {}),
+        'purpose': models.get('purpose_metrics', {}),
+        'anomaly': models.get('anomaly_metrics', {}),
+        'benchmarks': models.get('duration_metrics', {}).get('benchmarks', {})
+    }
+    
+    return jsonify(SYSTEM_INSIGHTS)
+
+@app.route('/api/model_performance')
+@login_required
+def model_performance():
+    """Detailed ML metrics for all models."""
+    return jsonify({
+        'duration': models.get('duration_metrics'),
+        'demand': models.get('demand_metrics'),
+        'category': models.get('category_metrics'),
+        'purpose': models.get('purpose_metrics'),
+        'anomaly': models.get('anomaly_metrics'),
+        'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+def autonomous_monitor():
+    """Background Orchestrator: Runs the agent autonomously in a loop."""
+    print("🤖 [System] Launching Background Autonomous Orchestrator...")
+    while True:
+        try:
+            agent = ai_agent.UberAutonomousAgent(session_id="SYSTEM_PRO")
+            report = agent.run_full_autonomous_cycle()
+            
+            global SYSTEM_INSIGHTS
+            SYSTEM_INSIGHTS.update({
+                'last_sync': report['timestamp'],
+                'strategic_actions': report['strategic_actions'],
+                'research_advisory': report.get('research_advisory', []),
+                'quality_score': report['summary']['quality_score'],
+                'drift': report['change_report'],
+                'alerts': report['alerts']
+            })
+            print(f"✅ [Automation] Healthy. Data Quality: {report['summary']['quality_score']}%")
+        except Exception as e:
+            print(f"❌ [Automation] Background Cycle Failed: {e}")
+            
+        time.sleep(600) # Sync every 10 minutes
+
+# Start the background automator
+threading.Thread(target=autonomous_monitor, daemon=True).start()
+
+@app.route('/api/download_live_stream')
+@login_required
+def download_live_stream():
+    """Generates and drops a PDF for the user's live ingested events."""
+    try:
+        intel = UberSystemIntelligence()
+        events = intel.generate_live_stream(count=50) # Sample 50 events for report
+        
+        pdf_buffer = generate_live_events_pdf(events)
+        
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f"Uber_Live_Events_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        flash(f"PDF Generation Failed: {e}", "danger")
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':

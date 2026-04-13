@@ -9,17 +9,31 @@ import plotly.express as px
 
 def plot_analysis(hourly_trips, daily_trips, weekday_trips, monthly_trips, 
                  trip_durations, purpose_counts, df):
-    """Generate and save interactive Plotly charts with clustering analysis."""
+    """
+    Generate and save research-grade interactive Plotly charts.
+    Theme: Modern Corporate Dark / Enterprise aesthetics.
+    """
     if not os.path.exists('static'):
         os.makedirs('static')
+
+    # Global Template override
+    import plotly.io as pio
+    pio.templates.default = "plotly_white" # Clean and professional
+    
+    ACCENT_COLOR = '#636EFA'
+    ANOMALY_COLOR = '#EF553B'
+    SUCCESS_COLOR = '#00CC96'
+
 
     # 1. Basic Plots (unchanged from your original)
     # Hourly Trips Plot
     if hourly_trips is not None and not hourly_trips.empty:
         fig = px.bar(hourly_trips, x=hourly_trips.index, y=hourly_trips.values,
                      labels={'x': "Hour of Day", 'y': "Number of Trips"},
-                     title="Hourly Uber Trips", text=hourly_trips.values)
-        fig.update_traces(textposition='outside', hoverinfo="x+y")
+                     title="Hourly Volume Distribution", text=hourly_trips.values,
+                     color_discrete_sequence=[ACCENT_COLOR])
+        fig.update_traces(textposition='outside', marker_line_color='rgb(8,48,107)', marker_line_width=1.5, opacity=0.8)
+        fig.update_layout(title_font_size=20, margin=dict(t=50, b=30, l=30, r=30))
         fig.write_html("static/hourly_trips.html")
 
     # Daily Trips Plot
@@ -295,6 +309,48 @@ def plot_analysis(hourly_trips, daily_trips, weekday_trips, monthly_trips,
                                y=demand_matrix.index,
                                color_continuous_scale='YlOrRd',
                                title="Revenue Optimizer: Demand Forecast Heatmap")
+                fig.update_layout(height=450)
                 fig.write_html("static/demand_forecast_heatmap.html")
         except Exception as e:
             print(f"Demand forecast heatmap failed: {str(e)}")
+
+        # J. [NEW] Revenue Leakage Analysis (Efficiency vs Volume)
+        try:
+            if 'MILES' in df.columns and 'Trip_Duration' in df.columns:
+                leakage_df = df.copy()
+                leakage_df['minutes_per_mile'] = leakage_df['Trip_Duration'] / leakage_df['MILES']
+                # High minutes per mile = low efficiency (traffic/idling)
+                avg_eff = leakage_df['minutes_per_mile'].median()
+                leakage_df['leakage_score'] = (leakage_df['minutes_per_mile'] - avg_eff).clip(lower=0)
+                
+                fig = px.density_heatmap(leakage_df, x="MILES", y="Trip_Duration", z="leakage_score",
+                                       histfunc="sum", title="Revenue Leakage: Operational Inefficiency Heatmap",
+                                       labels={'leakage_score': 'Efficiency Loss Index'},
+                                       color_continuous_scale='Viridis')
+                fig.write_html("static/revenue_leakage.html")
+        except: pass
+
+        # K. [NEW] Model Stability Monitor (Drift Visualizer)
+        try:
+            if 'START_DATE' in df.columns and 'MILES' in df.columns:
+                drift_df = df.sort_values('START_DATE')
+                drift_df['rolling_miles'] = drift_df['MILES'].rolling(window=100).mean()
+                
+                fig = px.line(drift_df, x='START_DATE', y='rolling_miles', 
+                             title="System Health: Model Pattern Stability (Rolling Distance)",
+                             labels={'rolling_miles': 'Avg Trip Distance (Rolling)'})
+                fig.add_hline(y=drift_df['MILES'].mean(), line_dash="dot", 
+                            annotation_text="Global Baseline", annotation_position="bottom right")
+                fig.write_html("static/drift_monitor.html")
+        except: pass
+
+        # L. [NEW] Autonomous Surge Intensity Heatmap
+        try:
+            if 'Hour' in df.columns and 'Weekday' in df.columns:
+                # Surge intensity often correlates with high variance in demand
+                surge_matrix = df.pivot_table(index='Weekday', columns='Hour', values='MILES', aggfunc='std').fillna(0)
+                fig = px.imshow(surge_matrix, color_continuous_scale='Inferno',
+                              title="Dynamic Catalyst: Surge Intensity Map",
+                              labels=dict(color="Surge Potential"))
+                fig.write_html("static/surge_intensity.html")
+        except: pass

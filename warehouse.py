@@ -9,6 +9,15 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
+import json
+
+class UberDataWarehouse:
+    """Enterprise-grade Data Warehouse orchestrator."""
+    def __init__(self):
+        self.fact_table = None
+        self.dim_time = None
+        self.dim_purpose = None
+
 
 
 # --- Fare Estimation ---
@@ -273,7 +282,7 @@ def generate_warehouse_charts(df):
     except Exception as e:
         print(f"Warehouse chart error (demand_heatmap): {e}")
 
-    # 5. Revenue Distribution by Hour (Treemap-style sunburst)
+    # 5. Revenue Distribution (Sunburst)
     try:
         hourly_rev = wdf.groupby(['DayName', 'Hour']).agg(
             Revenue=('Estimated_Fare', 'sum'),
@@ -295,5 +304,36 @@ def generate_warehouse_charts(df):
         fig.write_html('static/warehouse_revenue_sunburst.html')
     except Exception as e:
         print(f"Warehouse chart error (sunburst): {e}")
+
+    # --- [NEW] STAR SCHEMA ENGINE ---
+    def generate_star_schema(wdf):
+        """Simulates a Dimensional Model for high-performance querying."""
+        # Fact Table (Trips)
+        fact_trips = wdf[['START_DATE', 'MILES', 'Estimated_Fare', 'Surge_Multiplier']].copy()
+        
+        # Dim Time
+        dim_time = wdf[['START_DATE', 'Hour', 'Weekday', 'DayName', 'Month']].drop_duplicates()
+        
+        # Dim Purpose
+        if 'PURPOSE' in wdf.columns:
+            dim_purpose = wdf[['PURPOSE']].drop_duplicates().reset_index(drop=True)
+            dim_purpose['Purpose_ID'] = dim_purpose.index
+        
+        return fact_trips, dim_time
+
+    # --- [NEW] WAREHOUSE AUDITOR ---
+    def audit_warehouse(wdf):
+        """Automated Data Integrity Audit."""
+        issues = []
+        if wdf['MILES'].isna().any(): issues.append("Null miles detected.")
+        if (wdf['Estimated_Fare'] <= 0).any(): issues.append("Zero/Negative fares found.")
+        if wdf['START_DATE'].duplicated().sum() > 50: issues.append("High temporal overlap detected.")
+        
+        return {
+            'status': 'Healthy' if not issues else 'Warning',
+            'issue_count': len(issues),
+            'audit_log': issues,
+            'integrity_score': round(100 - (len(issues) * 5), 2)
+        }
 
     return kpis

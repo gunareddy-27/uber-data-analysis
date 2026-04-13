@@ -177,14 +177,142 @@ def train_trip_duration_model(df):
     cv_scores = cross_val_score(ensemble, X_train_scaled, y_train, cv=5, scoring='r2')
     print(f"  5-Fold CV R²: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
-    # Save
+    # Compute Prediction Interval Statistics (for research-grade uncertainty)
+    # Using RMSE as a proxy for prediction interval width (assuming normality of residuals)
+    prediction_std_err = test_rmse
+    
+    # [RESEARCH] Model Benchmarking Engine
+    from sklearn.linear_model import Ridge
+    from sklearn.neural_network import MLPRegressor
+    
+    print("🔬 Benchmarking against Baseline & Neural Models...")
+    
+    # 1. Baseline: Ridge Regression
+    ridge = Ridge(alpha=1.0)
+    ridge.fit(X_train_scaled, y_train)
+    ridge_r2 = r2_score(y_test, ridge.predict(X_test_scaled))
+    
+    # 2. Neural: MLP Regressor
+    mlp = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=500, alpha=0.01, random_state=42)
+    mlp.fit(X_train_scaled, y_train)
+    mlp_r2 = r2_score(y_test, mlp.predict(X_test_scaled))
+    
+    # Save benchmark 
+    metrics['benchmarks'] = {
+        'ensemble_r2': round(test_r2, 4),
+        'linear_baseline_r2': round(ridge_r2, 4),
+        'neural_network_r2': round(mlp_r2, 4),
+        'neural_upside': round(test_r2 - mlp_r2, 4)
+    }
+
+    # Save metadata with all metrics
     _ensure_models_dir()
     with open(MODEL_PATH, 'wb') as f:
-        pickle.dump(ensemble, f)
+        payload = {
+            'model': ensemble,
+            'prediction_std_err': test_rmse,
+            'feature_names': FEATURE_COLS,
+            'metrics': metrics
+        }
+        pickle.dump(payload, f)
     with open(SCALER_PATH, 'wb') as f:
         pickle.dump(scaler, f)
 
-    return ensemble, scaler
+    return ensemble, scaler, metrics
+
+def run_counterfactual(input_df, model_payload, scaler, target_feature, alternative_value):
+    """
+    [RESEARCH] Causal Counterfactual Analysis.
+    Predicts 'What if?' by shifting a single feature and comparing the result.
+    """
+    try:
+        model = model_payload['model']
+        feature_names = model_payload['feature_names']
+        
+        # Original Prediction
+        X_base = scaler.transform(input_df)
+        base_pred = model.predict(X_base)[0]
+        
+        # Modified Prediction
+        input_mod = input_df.copy()
+        input_mod[target_feature] = alternative_value
+        
+        # Recompute dependent features (e.g. if we changed Hour, we must change Hour_Sin/Cos)
+        if target_feature == 'Hour':
+            hour = alternative_value
+            input_mod['Hour_Sin'] = np.sin(2 * np.pi * hour / 24)
+            input_mod['Hour_Cos'] = np.cos(2 * np.pi * hour / 24)
+            input_mod['Miles_x_Hour'] = input_df['MILES'] * hour
+            input_mod['Hour_Sq'] = hour ** 2
+            
+        X_mod = scaler.transform(input_mod)
+        mod_pred = model.predict(X_mod)[0]
+        
+        diff = mod_pred - base_pred
+        return {
+            'original': round(float(base_pred), 2),
+            'counterfactual': round(float(mod_pred), 2),
+            'impact': round(float(diff), 2),
+            'percentage_shift': round(float(diff/base_pred*100), 1)
+        }
+    except:
+        return None
+    """
+    [XAI] Research Feature: Sensitivity Analysis.
+    Perturbs each feature to see its individual contribution to the final prediction.
+    """
+    try:
+        model = model_payload['model']
+        feature_names = model_payload['feature_names']
+        
+        # Scaling the input
+        X_base = scaler.transform(input_df)
+        base_pred = model.predict(X_base)[0]
+        
+        explanations = []
+        for i, col in enumerate(feature_names):
+            # Perturb feature by 10%
+            X_mod = X_base.copy()
+            X_mod[0, i] *= 1.1 # 10% shift
+            mod_pred = model.predict(X_mod)[0]
+            
+            diff = mod_pred - base_pred
+            explanations.append({
+                'feature': col,
+                'weight': round(float(diff), 4),
+                'direction': 'increases' if diff > 0 else 'decreases'
+            })
+            
+        # Top 3 drivers
+        top_drivers = sorted(explanations, key=lambda x: abs(x['weight']), reverse=True)[:3]
+        return top_drivers
+    except:
+        return []
+
+def run_monte_carlo_duration(input_df, model_payload, scaler, n_iter=1000):
+    """
+    [RESEARCH] Probabilistic Forecasting.
+    Uses Monte Carlo sampling based on model variance to produce a confidence distribution.
+    """
+    try:
+        model = model_payload['model']
+        std_err = model_payload.get('prediction_std_err', 3.6)
+        
+        X_scaled = scaler.transform(input_df)
+        point_estimate = model.predict(X_scaled)[0]
+        
+        # Sample from normal distribution centered at prediction
+        samples = np.random.normal(point_estimate, std_err, n_iter)
+        samples = np.maximum(samples, point_estimate * 0.1) # Duration must be > 0
+        
+        return {
+            'mean': round(float(point_estimate), 2),
+            'lower_95': round(float(np.percentile(samples, 2.5)), 2),
+            'upper_95': round(float(np.percentile(samples, 97.5)), 2),
+            'probability_mass': [float(s) for s in np.histogram(samples, bins=10)[0]]
+        }
+    except:
+        return None
 
 
 # ═══════════════════════════════════════════════
@@ -231,8 +359,17 @@ def train_demand_model(df):
 
     y_pred = model.predict(X_test)
     test_r2 = r2_score(y_test, y_pred)
+    test_mae = mean_absolute_error(y_test, y_pred)
+    test_rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+    
+    metrics = {
+        'r2': round(test_r2, 4),
+        'mae': round(test_mae, 2),
+        'rmse': round(test_rmse, 2),
+        'samples': len(df_demand)
+    }
     print(f"  Demand Model Test R²: {test_r2:.4f}")
-    print(f"  Demand Model Test MAE: {mean_absolute_error(y_test, y_pred):.2f}")
+    print(f"  Demand Model Test MAE: {test_mae:.2f}")
 
     # Location Intelligence: best START per (Hour, Weekday)
     loc_demand = df.groupby(['Hour', 'Weekday', 'START']).size().reset_index(name='Frequency')
@@ -244,9 +381,11 @@ def train_demand_model(df):
     # Save
     _ensure_models_dir()
     with open(DEMAND_MODEL_PATH, 'wb') as f:
-        pickle.dump(model, f)
+        pickle.dump({'model': model, 'metrics': metrics}, f)
     with open('models/best_locations_lookup.pkl', 'wb') as f:
         pickle.dump(best_locs, f)
+
+    return model, best_locs, metrics
 
     return model, best_locs
 
@@ -321,23 +460,31 @@ def train_classification_models(df):
     )
     model_purp.fit(X_train_p, y_train_p)
 
-    purp_train_acc = accuracy_score(y_train_p, model_purp.predict(X_train_p))
-    purp_test_acc = accuracy_score(y_test_p, model_purp.predict(X_test_p))
-    print(f"  Purpose Train Accuracy: {purp_train_acc:.4f}")
-    print(f"  Purpose Test  Accuracy: {purp_test_acc:.4f}")
+    from sklearn.metrics import precision_recall_fscore_support
+    
+    def get_clf_metrics(y_true, y_pred):
+        p, r, f, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted')
+        acc = accuracy_score(y_true, y_pred)
+        return {'accuracy': round(acc, 4), 'precision': round(p, 4), 'recall': round(r, 4), 'f1': round(f, 4)}
+
+    cat_metrics = get_clf_metrics(y_test, model_cat.predict(X_test))
+    purp_metrics = get_clf_metrics(y_test_p, model_purp.predict(X_test_p))
+
+    print(f"  Category Test  Accuracy: {cat_metrics['accuracy']}")
+    print(f"  Purpose Test  Accuracy: {purp_metrics['accuracy']}")
 
     # Save
     _ensure_models_dir()
     with open(CATEGORY_MODEL_PATH, 'wb') as f:
-        pickle.dump(model_cat, f)
+        pickle.dump({'model': model_cat, 'metrics': cat_metrics}, f)
     with open(PURPOSE_MODEL_PATH, 'wb') as f:
-        pickle.dump(model_purp, f)
+        pickle.dump({'model': model_purp, 'metrics': purp_metrics}, f)
     with open(CATEGORY_ENCODER_PATH, 'wb') as f:
         pickle.dump(le_cat, f)
     with open(PURPOSE_ENCODER_PATH, 'wb') as f:
         pickle.dump(le_purp, f)
 
-    return model_cat, model_purp, le_cat, le_purp
+    return model_cat, model_purp, le_cat, le_purp, {'category': cat_metrics, 'purpose': purp_metrics}
 
 
 # ═══════════════════════════════════════════════
@@ -508,32 +655,52 @@ def load_models():
         except (FileNotFoundError, Exception):
             return None
 
-    models['duration_model'] = load_pickle(MODEL_PATH)
+    def extract_model_and_metrics(data, suffix):
+        if isinstance(data, dict):
+            models[f'{suffix}_model'] = data.get('model')
+            models[f'{suffix}_metrics'] = data.get('metrics')
+            if 'prediction_std_err' in data: models[f'{suffix}_std_err'] = data['prediction_std_err']
+            if 'feature_names' in data: models[f'{suffix}_features'] = data['feature_names']
+            return True
+        return False
+
+    # 1. Duration Model
+    duration_data = load_pickle(MODEL_PATH)
+    if not extract_model_and_metrics(duration_data, 'duration'):
+        models['duration_model'] = duration_data
     models['duration_scaler'] = load_pickle(SCALER_PATH)
     print("  Loaded Duration Model.")
 
+    # 2. Location Model
     models['location_model'] = load_pickle(LOCATION_MODEL_PATH)
     models['stop_encoder'] = load_pickle(STOP_ENCODER_PATH)
     models['loc_cat_encoder'] = load_pickle(LOC_CAT_ENCODER_PATH)
     models['loc_purp_encoder'] = load_pickle(LOC_PURP_ENCODER_PATH)
     print("  Loaded Location Model.")
 
+    # 3. Anomaly & Forecast
     anomaly_data = load_pickle(ANOMALY_MODEL_PATH)
-    if isinstance(anomaly_data, dict):
-        models['anomaly_model'] = anomaly_data.get('model')
-        models['anomaly_scaler'] = anomaly_data.get('scaler')
-        models['anomaly_features'] = anomaly_data.get('features')
-    else:
-        models['anomaly_model'] = anomaly_data  # backward compat
+    if not extract_model_and_metrics(anomaly_data, 'anomaly'):
+        models['anomaly_model'] = anomaly_data
     models['forecast_model'] = load_pickle(FORECAST_MODEL_PATH)
     print("  Loaded Anomaly and Forecast Models.")
 
-    models['demand_model'] = load_pickle(DEMAND_MODEL_PATH)
+    # 4. Demand
+    demand_data = load_pickle(DEMAND_MODEL_PATH)
+    if not extract_model_and_metrics(demand_data, 'demand'):
+        models['demand_model'] = demand_data
     models['best_locations'] = load_pickle('models/best_locations_lookup.pkl')
     print("  Loaded Demand and Revenue Optimizer Models.")
 
-    models['category_model'] = load_pickle(CATEGORY_MODEL_PATH)
-    models['purpose_model'] = load_pickle(PURPOSE_MODEL_PATH)
+    # 5. Classification
+    cat_data = load_pickle(CATEGORY_MODEL_PATH)
+    if not extract_model_and_metrics(cat_data, 'category'):
+        models['category_model'] = cat_data
+        
+    purp_data = load_pickle(PURPOSE_MODEL_PATH)
+    if not extract_model_and_metrics(purp_data, 'purpose'):
+        models['purpose_model'] = purp_data
+        
     models['category_encoder'] = load_pickle(CATEGORY_ENCODER_PATH)
     models['purpose_encoder'] = load_pickle(PURPOSE_ENCODER_PATH)
     print("  Loaded Classification Models.")

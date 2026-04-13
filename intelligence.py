@@ -45,6 +45,46 @@ class UberSystemIntelligence:
             'is_positive': revenue_impact > 0
         }
 
+    def find_optimal_price_increase(self):
+        """
+        [AUTOMATION] Optimization Engine. 
+        Iteratively searches for the price increase that maximizes total revenue.
+        """
+        best_price = 0
+        max_rev = -float('inf')
+        
+        # Test range from 0% to 50% increase
+        for p in range(0, 51):
+            res = self.simulate_pricing(p)
+            if res['new_revenue'] > max_rev:
+                max_rev = res['new_revenue']
+                best_price = p
+                
+        return {
+            'optimal_increase_pct': best_price,
+            'max_revenue': round(max_rev, 2),
+            'baseline_revenue': self.simulate_pricing(0)['base_revenue'],
+            'potential_upside': round(max_rev - self.simulate_pricing(0)['base_revenue'], 2)
+        }
+
+    def predict_surge_triggers(self):
+        """[EXPERIMENTAL] Real-time surge trigger simulator."""
+        surge_level = random.uniform(1.0, 3.5)
+        is_triggered = surge_level > 2.2
+        confidence = random.uniform(0.7, 0.99)
+        
+        # Mocking 5 key areas
+        areas = ["Financial District", "Lakeside", "Airport Blvd", "South Station", "Park Central"]
+        surging_areas = [a for a in areas if random.random() > 0.6]
+        
+        return {
+            'is_active': is_triggered,
+            'avg_surge': round(surge_level, 1),
+            'trigger_confidence': round(confidence * 100, 2),
+            'surging_neighborhoods': surging_areas,
+            'recommendation': "Enable Surge Pricing" if is_triggered else "Normal Pricing"
+        }
+
     def generate_live_stream(self, count=10):
         """
         Simulates a Kafka/Spark real-time ride stream.
