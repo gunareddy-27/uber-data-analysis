@@ -168,6 +168,13 @@ def train_trip_duration_model(df):
     test_mae = mean_absolute_error(y_test, y_pred_test)
     test_rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
 
+    metrics = {
+        'r2': round(test_r2, 4),
+        'mae': round(test_mae, 2),
+        'rmse': round(test_rmse, 2),
+        'samples': len(df_model)
+    }
+
     print(f"  Train R²: {train_r2:.4f}")
     print(f"  Test  R²: {test_r2:.4f}")
     print(f"  Test MAE: {test_mae:.2f} min")
@@ -177,10 +184,6 @@ def train_trip_duration_model(df):
     cv_scores = cross_val_score(ensemble, X_train_scaled, y_train, cv=5, scoring='r2')
     print(f"  5-Fold CV R²: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
-    # Compute Prediction Interval Statistics (for research-grade uncertainty)
-    # Using RMSE as a proxy for prediction interval width (assuming normality of residuals)
-    prediction_std_err = test_rmse
-    
     # [RESEARCH] Model Benchmarking Engine
     from sklearn.linear_model import Ridge
     from sklearn.neural_network import MLPRegressor
@@ -257,6 +260,8 @@ def run_counterfactual(input_df, model_payload, scaler, target_feature, alternat
         }
     except:
         return None
+
+def run_sensitivity_analysis(input_df, model_payload, scaler):
     """
     [XAI] Research Feature: Sensitivity Analysis.
     Perturbs each feature to see its individual contribution to the final prediction.
@@ -386,8 +391,6 @@ def train_demand_model(df):
         pickle.dump(best_locs, f)
 
     return model, best_locs, metrics
-
-    return model, best_locs
 
 
 # ═══════════════════════════════════════════════

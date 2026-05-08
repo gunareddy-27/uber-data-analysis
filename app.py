@@ -54,7 +54,7 @@ class User(UserMixin, db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 # Load and process Uber dataset
 def load_and_process_data():
@@ -721,14 +721,20 @@ def initialize_app():
             df_pred = predictor.load_and_prepare_data('datasets/UberDataset.csv')
             
             if models.get('duration_model') is None:
-                models['duration_model'], models['duration_scaler'] = predictor.train_trip_duration_model(df_pred)
+                models['duration_model'], models['duration_scaler'], models['duration_metrics'] = predictor.train_trip_duration_model(df_pred)
                 
             if models.get('demand_model') is None:
-                models['demand_model'], models['best_locations'] = predictor.train_demand_model(df_pred)
+                models['demand_model'], models['best_locations'], models['demand_metrics'] = predictor.train_demand_model(df_pred)
 
             if models.get('category_model') is None:
                 print("Training classification models...")
-                models['category_model'], models['purpose_model'], models['category_encoder'], models['purpose_encoder'] = predictor.train_classification_models(df_pred)
+                (models['category_model'], 
+                 models['purpose_model'], 
+                 models['category_encoder'], 
+                 models['purpose_encoder'],
+                 clf_metrics) = predictor.train_classification_models(df_pred)
+                models['category_metrics'] = clf_metrics['category']
+                models['purpose_metrics'] = clf_metrics['purpose']
 
             if models.get('location_model') is None or models.get('loc_cat_encoder') is None:
                 (models['location_model'], 

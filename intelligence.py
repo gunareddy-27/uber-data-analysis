@@ -119,9 +119,12 @@ class UberSystemIntelligence:
         df_prep['START_DATE'] = pd.to_datetime(df_prep['START_DATE'], errors='coerce')
         df_prep['END_DATE'] = pd.to_datetime(df_prep['END_DATE'], errors='coerce')
         df_prep['Trip_Duration'] = (df_prep['END_DATE'] - df_prep['START_DATE']).dt.total_seconds() / 60
-        df_prep = df_prep.dropna(subset=['MILES', 'Trip_Duration'])
+        df_prep['Hour'] = df_prep['START_DATE'].dt.hour
+        df_prep['Weekday'] = df_prep['START_DATE'].dt.dayofweek
         
-        X = df_prep[['MILES', 'Trip_Duration']]
+        df_prep = df_prep.dropna(subset=['MILES', 'Trip_Duration', 'Hour', 'Weekday'])
+        
+        X = df_prep[['MILES', 'Trip_Duration', 'Hour', 'Weekday']]
         preds = model.predict(X)
         
         # -1 indicates an anomaly
